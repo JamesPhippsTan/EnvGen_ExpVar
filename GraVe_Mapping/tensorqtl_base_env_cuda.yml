@@ -1,0 +1,17 @@
+name: tensorqtl_base
+dependencies:
+- python=3.11
+- pip
+- pip:
+  - numpy
+  - pandas
+  - pandas-plink
+  - Pgenlib>=0.90.1
+  - pyarrow
+  - qtl
+  - rpy2
+  - scipy
+  - torch==2.4.1 --index-url https://download.pytorch.org/whl/cu124
+  - torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu124
+  - torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu124
+  - tensorqtl
