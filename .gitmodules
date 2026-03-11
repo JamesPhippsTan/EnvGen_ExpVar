@@ -1,0 +1,3 @@
+[submodule "pipelines/eqtl_veqtl_pipeline"]
+	path = pipelines/eqtl_veqtl_pipeline
+	url = git@github.com:PallaresLab/eqtl_veqtl_pipeline.git
