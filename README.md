@@ -1,4 +1,4 @@
-Contains R, python, and bash scripts utilised to generate the figures and tables within 'Environmental perturbation increases gene expression variability and unmasks genetic regulation for transcriptional robustness'. It is split into the following subfolders:
+Contains R, python, and bash scripts utilised to generate the figures and tables within 'Environmental perturbation increases gene expression variability and unmasks genetic regulation for transcriptional robustness' (https://www.biorxiv.org/content/10.64898/2026.02.18.706644v1.full). It is split into the following subfolders:
 
 
 Start page - helper functions and RNAseq data QC (Figure 1 and supplement).
