@@ -10,3 +10,7 @@ DE_DV - differential expression (DE) and differential variability (DV) analysis 
 Developmental_time - used for egg-adult survival eclosion day statistics (Figure 3 and supplement).
 
 GraVe_Mapping - Gra(mmar) Ve(qtl) mappping in each diet (Figure 4 and supplement). Contains modified versions of tensorqtl python codes (substitute these files into an existing conda installation) and veqtl mapper D code (requires following https://funpopgen.github.io/veqtl-mapper/ to build from source but using the files here instead of those in the default git clone). Snakemake pipeline in progress for better flow and ease of reproducibility.
+
+FDI_cal - used to be able to calculate the fraction (F) of derived (D) SNPs that increase (I) the metric of interest, either mean expression for eQTL or variability in expression for veQTL
+
+pipelines - snakemake pipelines integrating analyses and codes in GraVe_Mapping and FDI_cal to allow quicker reproducibility of the results and greater flexibility to be adapted to more complex experimental designs.  
