@@ -30,7 +30,7 @@ eQTL_number_per_gene <- function(gene_df){
 }
 
 top_eQTL_list <- function(split_gene_df,number) {
-  sorted_df <- split_gene_df[order(split_gene_df[, 'p_final'], decreasing = TRUE), ]
+  sorted_df <- split_gene_df[order(split_gene_df[, 'p_final'], decreasing = FALSE), ]
   top_list <- head(sorted_df, number)
   return(top_list)
 }
