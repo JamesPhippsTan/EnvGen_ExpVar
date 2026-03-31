@@ -5,7 +5,7 @@
 # How many CPUs for this job?
 #$ -pe parallel 1
 # How much RAM per CPU?
-#$ -l h_vmem=50G
+#$ -l h_vmem=150G # tailor depending on your cluster...
 # Number of parallel jobs to be run as part of an array job
 #$ -t 1:293
 #$ -o map_trans_veqtl_HS.out
