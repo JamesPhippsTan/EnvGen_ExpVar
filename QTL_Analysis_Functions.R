@@ -358,8 +358,13 @@ get_SNP_specific_FDI <- function(QTL_df, SNP_ages_df, slope_allele_column, slope
 }
 
 # Turn the SNP rownames into a column
-SNP_rownames_to_column <- function(df) {
-  tibble::rownames_to_column(df, var = "SNP")
+SNP_rownames_rename_MAF_DAF <- function(df) {
+  df %>%
+    tibble::rownames_to_column(var = "SNP") %>%
+    dplyr::rename(
+      MAF = dplyr::all_of(names(.)[2]),
+      DAF = dplyr::all_of(names(.)[3])
+    )
 }
 
 # Helper: subsample SNPs given MAF criteria
