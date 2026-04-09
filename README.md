@@ -17,4 +17,4 @@ pipelines - snakemake pipelines integrating analyses and codes in GraVe_Mapping 
 
 R scripts 0) until 7) - RNAseq data processing and quality checks (Figure 1 and supplement).
 
-_Functions.R - functions for specific but inter-related aspects of the analyses
+_Functions.R - functions for specific types of analyses
