@@ -56,10 +56,10 @@ for (quintile in 1:5){
 # What dataframes are necessary
 HS_tv_DI_MAF_Criteria <- HS_trans_veQTL_der_inc_MAF_Criteria # Criteria 1 
 HS_tv_DD_MAF_Criteria <- HS_trans_veQTL_der_dec_MAF_Criteria # Criteria 2
-HS_tv_DI_df <- SNP_rownames_to_column(MAF_DAF[HS_trans_veQTL_der_inc$SNP,c('HS_MAF','HS_DAF')])
-HS_tv_DD_df <- SNP_rownames_to_column(MAF_DAF[HS_trans_veQTL_der_dec$SNP,c('HS_MAF','HS_DAF')])
-HS_tv_DI_non_df <- SNP_rownames_to_column(MAF_DAF[non_HS_veQTL_aged,c('HS_MAF','HS_DAF')])
-HS_tv_DD_non_df <- SNP_rownames_to_column(MAF_DAF[non_HS_veQTL_aged,c('HS_MAF','HS_DAF')])
+HS_tv_DI_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[HS_trans_veQTL_der_inc$SNP,c('HS_MAF','HS_DAF')])
+HS_tv_DD_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[HS_trans_veQTL_der_dec$SNP,c('HS_MAF','HS_DAF')])
+HS_tv_DI_non_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[HS_trans_non_veQTL_aged,c('HS_MAF','HS_DAF')])
+HS_tv_DD_non_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[HS_trans_non_veQTL_aged,c('HS_MAF','HS_DAF')])
 # Sufficient information for downsampling and estimation of average DAF...
 
 # HS trans-e
@@ -87,10 +87,10 @@ for (quintile in 1:5){
 # What dataframes are necessary
 HS_te_DI_MAF_Criteria <- HS_trans_eQTL_der_inc_MAF_Criteria # Criteria 1 
 HS_te_DD_MAF_Criteria <- HS_trans_eQTL_der_dec_MAF_Criteria # Criteria 2
-HS_te_DI_df <- SNP_rownames_to_column(MAF_DAF[HS_trans_eQTL_der_inc$SNP,c('HS_MAF','HS_DAF')])
-HS_te_DD_df <- SNP_rownames_to_column(MAF_DAF[HS_trans_eQTL_der_dec$SNP,c('HS_MAF','HS_DAF')]) 
-HS_te_DI_non_df <- SNP_rownames_to_column(MAF_DAF[non_HS_trans_eQTL_by_MAF$SNP,c('HS_MAF','HS_DAF')]) 
-HS_te_DD_non_df <- SNP_rownames_to_column(MAF_DAF[non_HS_trans_eQTL_by_MAF$SNP,c('HS_MAF','HS_DAF')]) 
+HS_te_DI_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[HS_trans_eQTL_der_inc$SNP,c('HS_MAF','HS_DAF')])
+HS_te_DD_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[HS_trans_eQTL_der_dec$SNP,c('HS_MAF','HS_DAF')]) 
+HS_te_DI_non_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[HS_trans_non_eQTL_aged,c('HS_MAF','HS_DAF')]) 
+HS_te_DD_non_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[HS_trans_non_eQTL_aged,c('HS_MAF','HS_DAF')]) 
 # Sufficient information for downsampling and estimation of aerage DAF...
 
 # Ctrl trans-v 
@@ -118,10 +118,10 @@ for (quintile in 1:5){
 # What dataframes are necessary
 Ctrl_tv_DI_MAF_Criteria <- Ctrl_trans_veQTL_der_inc_MAF_Criteria # Criteria 1 
 Ctrl_tv_DD_MAF_Criteria <- Ctrl_trans_veQTL_der_dec_MAF_Criteria # Criteria 2
-Ctrl_tv_DI_df <- SNP_rownames_to_column(MAF_DAF[Ctrl_trans_veQTL_der_inc$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
-Ctrl_tv_DD_df <- SNP_rownames_to_column(MAF_DAF[Ctrl_trans_veQTL_der_dec$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
-Ctrl_tv_DI_non_df <- SNP_rownames_to_column(MAF_DAF[non_Ctrl_veQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) 
-Ctrl_tv_DD_non_df <- SNP_rownames_to_column(MAF_DAF[non_Ctrl_veQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_tv_DI_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[Ctrl_trans_veQTL_der_inc$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_tv_DD_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[Ctrl_trans_veQTL_der_dec$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_tv_DI_non_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[Ctrl_trans_non_veQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_tv_DD_non_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[Ctrl_trans_non_veQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) 
 # Sufficient information for downsampling and estimation of average DAF...
 # Remove sampling from table step
 # Sample rows 1000 times and compute average DAF per sample
@@ -152,10 +152,10 @@ for (quintile in 1:5){
 # What dataframes are necessary
 Ctrl_te_DI_MAF_Criteria <- Ctrl_trans_eQTL_der_inc_MAF_Criteria # Criteria 1 
 Ctrl_te_DD_MAF_Criteria <- Ctrl_trans_eQTL_der_dec_MAF_Criteria # Criteria 2
-Ctrl_te_DI_df <- SNP_rownames_to_column(MAF_DAF[Ctrl_trans_eQTL_der_inc$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
-Ctrl_te_DD_df <- SNP_rownames_to_column(MAF_DAF[Ctrl_trans_eQTL_der_dec$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
-Ctrl_te_DI_non_df <- SNP_rownames_to_column(MAF_DAF[non_Ctrl_trans_eQTL_by_MAF$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
-Ctrl_te_DD_non_df <- SNP_rownames_to_column(MAF_DAF[non_Ctrl_trans_eQTL_by_MAF$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_te_DI_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[Ctrl_trans_eQTL_der_inc$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_te_DD_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[Ctrl_trans_eQTL_der_dec$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_te_DI_non_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[Ctrl_trans_non_eQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_te_DD_non_df <- SNP_rownames_rename_MAF_DAF(MAF_DAF[Ctrl_trans_non_eQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) 
 # Sufficient information for downsampling and estimation of average DAF...
 # Remove sampling from table step
 # Sample rows 1000 times and compute aerage DAF per sample
@@ -284,4 +284,12 @@ for (cat in categories) {
 
 # Save combined summary table
 write.table(summary_table, "DAF_Downsampling_Combined_Summary_Stats.txt", sep = "\t", quote = FALSE, row.names = FALSE)
+
+
+#################################################
+##### End) Save working environment #############
+#################################################
+
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping")
+save.image(file='6_Investigating_eQTL_and_veQTL_Allele_Age3.RData')
 
