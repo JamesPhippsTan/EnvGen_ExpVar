@@ -15,6 +15,6 @@ FDI_cal - used to calculate the fraction (F) of derived (D) SNPs that increase (
 
 pipelines - snakemake pipelines integrating analyses and codes in GraVe_Mapping and FDI_cal. Speeds up reproducing the results in the manuscript and facilitates adaptation to more complex experimental designs in the future.  
 
-R scripts 0) until 7) - RNAseq data processing and quality checks (Figure 1 and supplement).
+R scripts 0 until 6 - RNAseq data processing and quality checks (Figure 1 and supplement).
 
 _Functions.R - functions for specific types of analyses
