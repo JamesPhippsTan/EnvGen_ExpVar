@@ -13,7 +13,7 @@ GraVe_Mapping - Gra(mmar) Ve(qtl) mappping in each diet (Figure 4 and supplement
 
 FDI_cal - used to calculate the fraction (F) of derived (D) SNPs that increase (I) the metric of interest - either mean expression for eQTL or variability in expression for veQTL - and then plot distributions of this fraction across subsamples for a defined set of SNPs (e.g., those that are QTL or those that are not QTL).
 
-pipelines - snakemake pipelines integrating analyses and codes in GraVe_Mapping and FDI_cal. Speeds up reproducing the results in the manuscript and facilitates adaptation to more complex experimental designs.  
+pipelines - snakemake pipelines integrating analyses and codes in GraVe_Mapping and FDI_cal. Speeds up reproducing the results in the manuscript and facilitates adaptation to more complex experimental designs in the future.  
 
 R scripts 0) until 7) - RNAseq data processing and quality checks (Figure 1 and supplement).
 
