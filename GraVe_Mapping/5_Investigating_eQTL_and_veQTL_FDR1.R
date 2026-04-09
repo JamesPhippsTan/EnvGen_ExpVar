@@ -1,7 +1,7 @@
 # Investigating eQTL and veQTL
 # 0.01 FDR as the cutoff
 
-# Last Updated: 22/10/25
+# Last Updated: 7/4/2026
 
 #################################
 ##### Packages and Setup ########
@@ -42,10 +42,28 @@ source('QTL_Analysis_Functions.R')
 
 # Load veQTL result files
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
-Ctrl_cis_veQTL <- read.table("Ctrl_cis_veQTL.txt", header = T,skipNul = T)
-Ctrl_trans_veQTL <- read.table("Ctrl_trans_veQTL.0_0005.pval.txt", header = T,skipNul = T)
-HS_cis_veQTL <- read.table("HS_cis_veQTL.txt", header = T,skipNul = T)
-HS_trans_veQTL <- read.table("HS_trans_veQTL.0_0005.pval.txt", header = T,skipNul = T)
+# Cis-veQTL - all genes have been remapped
+Ctrl_cis_veQTL <- read.table("Ctrl_cis_veQTL_remap.txt", header = T,skipNul = T)
+HS_cis_veQTL <- read.table("HS_cis_veQTL_remap.txt", header = T,skipNul = T)
+# Trans-veQTL only some genes have been remapped
+# Remove them from the original p<0.0005 file using gene name exclusion
+# Insert the results of the remapping to replace them to create a final p<0.0005 file
+Ctrl_trans_veQTL_original <- read.table("Ctrl_trans_veQTL.0_0005.pval.txt", header = T,skipNul = T)
+HS_trans_veQTL_original <- read.table("HS_trans_veQTL.0_0005.pval.txt", header = T,skipNul = T)
+Ctrl_trans_veQTL_genes_to_remap <- read.table("Ctrl_trans_veQTL_genes_to_remap.txt",header=T)
+HS_trans_veQTL_genes_to_remap <- read.table("HS_trans_veQTL_genes_to_remap.txt",header=T)
+Ctrl_trans_veQTL_original_minus_remap <- Ctrl_trans_veQTL_original[!(Ctrl_trans_veQTL_original$GENE %in% Ctrl_trans_veQTL_genes_to_remap$x),]
+HS_trans_veQTL_original_minus_remap <- HS_trans_veQTL_original[!(HS_trans_veQTL_original$GENE %in% HS_trans_veQTL_genes_to_remap$x),]
+# If correct, subtracting the remapped and the not remapped from the full dataset should result in 0
+# Ctrl_trans_veQTL_original_remap <- Ctrl_trans_veQTL_original[Ctrl_trans_veQTL_original$GENE %in% Ctrl_trans_veQTL_genes_to_remap$x,]
+# HS_trans_veQTL_original_remap <- HS_trans_veQTL_original[HS_trans_veQTL_original$GENE %in% HS_trans_veQTL_genes_to_remap$x,]
+# nrow(Ctrl_trans_veQTL_original)-nrow(Ctrl_trans_veQTL_original_minus_remap)-nrow(Ctrl_trans_veQTL_original_remap)
+# nrow(HS_trans_veQTL_original)-nrow(HS_trans_veQTL_original_minus_remap)-nrow(HS_trans_veQTL_original_remap)
+# Correct...so now let's add the remapped genes to the original minus remapped
+Ctrl_trans_veQTL_remap <- read.table("Ctrl_trans_veQTL.0_0005.pval_remap.txt", header = T,skipNul = T)
+HS_trans_veQTL_remap <- read.table("HS_trans_veQTL.0_0005.pval_remap.txt", header = T,skipNul = T)
+Ctrl_trans_veQTL <- rbind(Ctrl_trans_veQTL_original_minus_remap,Ctrl_trans_veQTL_remap)
+HS_trans_veQTL <- rbind(HS_trans_veQTL_original_minus_remap,HS_trans_veQTL_remap)
 
 # Position file to re-map actual SNP names to trans-veQTL
 SNPs_dummy_positions <- read.table("SNPs_dummy_positions.txt")

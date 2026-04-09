@@ -1,7 +1,7 @@
-# Investigating eQTL and veQTL
-# Add a post-hoc filter for heterozygotes = 100
+# Investigating eQTL and veQTL 
+# Using and integrating remapped veQTL mapping results with top eQTL function corrected
 
-# Last Updated: 7/4/2026
+# Last Updated: 7/4/26
 
 #################################
 ##### Packages and Setup ########
@@ -27,7 +27,7 @@ library(svglite)
 
 # Load saved script environment
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
-#load(file='5_Investigating_eQTL_and_veQTL_het100.RData')
+#load(file='5_Investigating_eQTL_and_veQTL.RData')
 
 # Functions
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Code")
@@ -94,12 +94,12 @@ HS_SNP_stats <- read.table("Dmel_HS_final_geno_counts.frqx",header = T,sep='\t',
 HS_SNP_stats <- add_MAF(HS_SNP_stats)
 # Note: For most SNPs, A1 is the minor allele
 MAF_initial <- data.frame(row.names = Ctrl_SNP_stats$SNP, 
-                          Ctrl_MAF=Ctrl_SNP_stats$MAF,
-                          HS_MAF=HS_SNP_stats$MAF,
-                          Ctrl_minor_allele=Ctrl_SNP_stats$Minor_allele,
-                          HS_minor_allele=HS_SNP_stats$Minor_allele,
-                          MAF_Diff=(HS_SNP_stats$MAF-Ctrl_SNP_stats$MAF),
-                          Avg_MAF =(Ctrl_SNP_stats$MAF+HS_SNP_stats$MAF)/2) 
+                            Ctrl_MAF=Ctrl_SNP_stats$MAF,
+                            HS_MAF=HS_SNP_stats$MAF,
+                            Ctrl_minor_allele=Ctrl_SNP_stats$Minor_allele,
+                            HS_minor_allele=HS_SNP_stats$Minor_allele,
+                            MAF_Diff=(HS_SNP_stats$MAF-Ctrl_SNP_stats$MAF),
+                            Avg_MAF =(Ctrl_SNP_stats$MAF+HS_SNP_stats$MAF)/2) 
 MAF <- MAF_initial[SNPs_position_map$SNP,]
 
 # Load SNPs with allele age - i.e., ancestral or derived
@@ -116,20 +116,19 @@ eQTL_GxE_table <- read.csv('GxE/eQTL_GxE_table.csv')
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\")
 All_genes <- read.csv("Gene_MeanVar_Table.csv",row.names = 1)
 
-
 #####################################
 ##### 1) Pre-processing #############
 #####################################
 
 # Remove cis-SNPs from trans-veQTL mapping results
 Ctrl_trans_veQTL <- remove_cis_veQTL(trans_mapping_df = Ctrl_trans_veQTL, 
-                                     SNP_positions = SNPs_position_map,
-                                     gene_positions = Gene_body_locations,
-                                     cis_window = 10000)
+                              SNP_positions = SNPs_position_map,
+                              gene_positions = Gene_body_locations,
+                              cis_window = 10000)
 HS_trans_veQTL <- remove_cis_veQTL(trans_mapping_df = HS_trans_veQTL, 
-                                   SNP_positions = SNPs_position_map,
-                                   gene_positions = Gene_body_locations,
-                                   cis_window = 10000)
+                                    SNP_positions = SNPs_position_map,
+                                    gene_positions = Gene_body_locations,
+                                    cis_window = 10000)
 
 # For cis, add SNP names (these names have been added to the trans results in the process of removing cis-veQTL)
 Ctrl_cis_veQTL$SNP <- paste0(sub(23,"X",Ctrl_cis_veQTL$CHROM),Ctrl_cis_veQTL$POS)
@@ -152,91 +151,69 @@ HS_trans_eqtl_sig$gene_SNP_pair <- paste0(HS_trans_eqtl_sig$phenotype_id,"_",HS_
 ######################################################################################
 
 # Different p-value thresholds
-p_val_cutoffs <- c(0.2,0.1,0.05)
+p_val_cutoffs <- c(0.05)
 for (p_val in p_val_cutoffs){
-  print(p_val)
-  
-  # 1: BH correction for cis-QTL
-  n_cis_tests <- nrow(Ctrl_cis_veQTL)
-  n_cis_tests
-  length(unique(Ctrl_cis_veQTL$GENE))
-  length(unique(Ctrl_cis_veQTL$SNP))
-  
-  Ctrl_cis_veQTL$vfdr <- p.adjust(Ctrl_cis_veQTL$P,method = 'BH',n=n_cis_tests)
-  Ctrl_cis_veQTL_sig <- subset(Ctrl_cis_veQTL,vfdr<p_val) 
-  max(Ctrl_cis_veQTL_sig$P) 
-  Ctrl_cis_veQTL_FDR0.05 <- max(subset(Ctrl_cis_veQTL,vfdr<0.05)$P) 
-  Ctrl_cis_veQTL_FDR0.1 <- max(subset(Ctrl_cis_veQTL,vfdr<0.1)$P) 
-  
-  HS_cis_veQTL$vfdr <- p.adjust(HS_cis_veQTL$P,method = 'BH',n=n_cis_tests)
-  HS_cis_veQTL_sig <- subset(HS_cis_veQTL,vfdr<p_val) 
-  max(HS_cis_veQTL_sig$P) 
-  HS_cis_veQTL_FDR0.05 <- max(subset(HS_cis_veQTL,vfdr<0.05)$P) 
-  HS_cis_veQTL_FDR0.1 <- max(subset(HS_cis_veQTL,vfdr<0.1)$P) 
-  
-  # 2: BH correction for trans-QTL
-  n_trans_tests <- 8763*383710-n_cis_tests  
-  n_trans_tests
-  length(unique(Ctrl_trans_veQTL$SNP))
-  
-  Ctrl_trans_veQTL$vfdr <- p.adjust(Ctrl_trans_veQTL$P,method = 'BH',n=n_trans_tests)
-  Ctrl_trans_veQTL_sig <- subset(Ctrl_trans_veQTL,vfdr<p_val) 
-  max(Ctrl_trans_veQTL_sig$P) # Critical raw pval = 1.07675e-08
-  Ctrl_trans_veQTL_FDR0.05 <- max(subset(Ctrl_trans_veQTL,vfdr<0.05)$P) 
-  Ctrl_trans_veQTL_FDR0.1 <- max(subset(Ctrl_trans_veQTL,vfdr<0.1)$P) 
-  
-  HS_trans_veQTL$vfdr <- p.adjust(HS_trans_veQTL$P,method = 'BH',n=n_trans_tests)
-  HS_trans_veQTL_sig <- subset(HS_trans_veQTL,vfdr<p_val) 
-  max(HS_trans_veQTL_sig$P) # Critical raw pval = 7.90163e-06
-  HS_trans_veQTL_FDR0.05 <- max(subset(HS_trans_veQTL,vfdr<0.05)$P) 
-  HS_trans_veQTL_FDR0.1 <- max(subset(HS_trans_veQTL,vfdr<0.1)$P) 
+print(p_val)
+
+# 1: BH correction for cis-QTL
+n_cis_tests <- nrow(Ctrl_cis_veQTL)
+n_cis_tests
+length(unique(Ctrl_cis_veQTL$GENE))
+length(unique(Ctrl_cis_veQTL$SNP))
+
+Ctrl_cis_veQTL$vfdr <- p.adjust(Ctrl_cis_veQTL$P,method = 'BH',n=n_cis_tests)
+Ctrl_cis_veQTL_sig <- subset(Ctrl_cis_veQTL,vfdr<p_val) 
+max(Ctrl_cis_veQTL_sig$P) 
+Ctrl_cis_veQTL_FDR0.05 <- max(subset(Ctrl_cis_veQTL,vfdr<0.05)$P) 
+Ctrl_cis_veQTL_FDR0.1 <- max(subset(Ctrl_cis_veQTL,vfdr<0.1)$P) 
+
+HS_cis_veQTL$vfdr <- p.adjust(HS_cis_veQTL$P,method = 'BH',n=n_cis_tests)
+HS_cis_veQTL_sig <- subset(HS_cis_veQTL,vfdr<p_val) 
+max(HS_cis_veQTL_sig$P) 
+HS_cis_veQTL_FDR0.05 <- max(subset(HS_cis_veQTL,vfdr<0.05)$P) 
+HS_cis_veQTL_FDR0.1 <- max(subset(HS_cis_veQTL,vfdr<0.1)$P) 
+
+# 2: BH correction for trans-QTL
+n_trans_tests <- 8763*383710-n_cis_tests  
+n_trans_tests
+length(unique(Ctrl_trans_veQTL$SNP))
+
+Ctrl_trans_veQTL$vfdr <- p.adjust(Ctrl_trans_veQTL$P,method = 'BH',n=n_trans_tests)
+Ctrl_trans_veQTL_sig <- subset(Ctrl_trans_veQTL,vfdr<p_val) 
+max(Ctrl_trans_veQTL_sig$P) # Critical raw pval = 1.07675e-08
+Ctrl_trans_veQTL_FDR0.05 <- max(subset(Ctrl_trans_veQTL,vfdr<0.05)$P) 
+Ctrl_trans_veQTL_FDR0.1 <- max(subset(Ctrl_trans_veQTL,vfdr<0.1)$P) 
+
+HS_trans_veQTL$vfdr <- p.adjust(HS_trans_veQTL$P,method = 'BH',n=n_trans_tests)
+HS_trans_veQTL_sig <- subset(HS_trans_veQTL,vfdr<p_val) 
+max(HS_trans_veQTL_sig$P) # Critical raw pval = 7.90163e-06
+HS_trans_veQTL_FDR0.05 <- max(subset(HS_trans_veQTL,vfdr<0.05)$P) 
+HS_trans_veQTL_FDR0.1 <- max(subset(HS_trans_veQTL,vfdr<0.1)$P) 
+
+# Effect size (correlation slope) distributions
+cor_plot_list <- list()
+
+cor_plot_list[[1]] <-ggplot(Ctrl_cis_veQTL_sig,aes(y=abs(COR),x=P))+geom_point()+theme_classic()+geom_vline(xintercept = Ctrl_cis_veQTL_FDR0.05, color = "red", linetype = "dashed")+
+  geom_vline(xintercept = Ctrl_cis_veQTL_FDR0.1, color = "red", linetype = "dashed")+
+  ggtitle('Ctrl_cis_veQTL_sig')
+cor_plot_list[[2]] <-ggplot(HS_cis_veQTL_sig,aes(y=abs(COR),x=P))+geom_point() +theme_classic()+geom_vline(xintercept = HS_cis_veQTL_FDR0.05, color = "red", linetype = "dashed")+
+  geom_vline(xintercept = HS_cis_veQTL_FDR0.1, color = "red", linetype = "dashed")+
+  ggtitle('HS_cis_veQTL_sig')
+cor_plot_list[[3]] <-ggplot(Ctrl_trans_veQTL_sig,aes(y=abs(COR),x=P))+geom_point() +theme_classic()+geom_vline(xintercept = Ctrl_trans_veQTL_FDR0.05, color = "red", linetype = "dashed")+
+  geom_vline(xintercept = Ctrl_trans_veQTL_FDR0.1, color = "red", linetype = "dashed")+
+  ggtitle('Ctrl_trans_veQTL_sig')
+cor_plot_list[[4]] <-ggplot(HS_trans_veQTL_sig,aes(y=abs(COR),x=P))+geom_point() +theme_classic()+geom_vline(xintercept = HS_trans_veQTL_FDR0.05, color = "red", linetype = "dashed")+
+  geom_vline(xintercept = HS_trans_veQTL_FDR0.1, color = "red", linetype = "dashed")+
+  ggtitle('HS_trans_veQTL_sig')
+
+cor_plots <- cor_plot_list[[1]] + cor_plot_list[[2]] + cor_plot_list[[3]] + cor_plot_list[[4]] + plot_layout(ncol = 2,nrow = 2)
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
+#ggsave(plot = cor_plots,filename=paste0(p_val,'_CorrPvalPlots.png'),width=6,height=4)
 }
 
 ################################################################
 #######  Investigate veQTL and their relation to eQTL ##########
 ################################################################
-
-# Add SNP stats and info
-Ctrl_cis_eqtl_sig <- add_SNP_stats(Ctrl_cis_eqtl_sig,
-                                               SNP_stats_df = Ctrl_SNP_stats,
-                                               merge_column = 'variant_id') 
-HS_cis_eqtl_sig <- add_SNP_stats(HS_cis_eqtl_sig,
-                                             SNP_stats_df = HS_SNP_stats,
-                                             merge_column = 'variant_id')
-Ctrl_trans_eqtl_sig <- add_SNP_stats(Ctrl_trans_eqtl_sig,
-                                                 SNP_stats_df = Ctrl_SNP_stats,
-                                                 merge_column = 'variant_id') 
-HS_trans_eqtl_sig <- add_SNP_stats(HS_trans_eqtl_sig,
-                                               SNP_stats_df = HS_SNP_stats,
-                                               merge_column = 'variant_id') 
-
-Ctrl_cis_veQTL_sig <- add_SNP_stats(Ctrl_cis_veQTL_sig,
-                                                SNP_stats_df = Ctrl_SNP_stats,
-                                                merge_column = 'SNP') 
-HS_cis_veQTL_sig <- add_SNP_stats(HS_cis_veQTL_sig,
-                                              SNP_stats_df = HS_SNP_stats,
-                                              merge_column = 'SNP')
-Ctrl_trans_veQTL_sig <- add_SNP_stats(Ctrl_trans_veQTL_sig,
-                                                  SNP_stats_df = Ctrl_SNP_stats,
-                                                  merge_column = 'SNP') 
-HS_trans_veQTL_sig <- add_SNP_stats(HS_trans_veQTL_sig,
-                                                SNP_stats_df = HS_SNP_stats,
-                                                merge_column = 'SNP')
-
-
-###############################
-# (0) Impose het = 100 filter #
-###############################
-
-Ctrl_cis_eqtl_sig <- Ctrl_cis_eqtl_sig %>%  filter(`C(HET)` >= 100)
-HS_cis_eqtl_sig <- HS_cis_eqtl_sig %>%  filter(`C(HET)` >= 100)
-Ctrl_trans_eqtl_sig <- Ctrl_trans_eqtl_sig %>%  filter(`C(HET)` >= 100)
-HS_trans_eqtl_sig <- HS_trans_eqtl_sig %>%  filter(`C(HET)` >= 100)
-
-Ctrl_cis_veQTL_sig <- Ctrl_cis_veQTL_sig %>%  filter(`C(HET)` >= 100)
-HS_cis_veQTL_sig <- HS_cis_veQTL_sig %>%  filter(`C(HET)` >= 100)
-Ctrl_trans_veQTL_sig <- Ctrl_trans_veQTL_sig %>%  filter(`C(HET)` >= 100)
-HS_trans_veQTL_sig <- HS_trans_veQTL_sig %>%  filter(`C(HET)` >= 100)
 
 ####################################################################################
 # (1) How many significant gene-SNP veQTL pairs across the transcriptome-genome ####
@@ -244,14 +221,14 @@ HS_trans_veQTL_sig <- HS_trans_veQTL_sig %>%  filter(`C(HET)` >= 100)
 
 p_val_text <- paste0(' p < ',p_val)
 print(paste0('Ctrl_cis_veQTL_sig',p_val_text))
-print(nrow(Ctrl_cis_veQTL_sig)) # 11 - all over 100 in the HET category
+print(nrow(Ctrl_cis_veQTL_sig)) # 11
 print(paste0('HS_cis_veQTL_sig',p_val_text))
-print(nrow(HS_cis_veQTL_sig)) # 148; 118 if more than 100 in the HET
+print(nrow(HS_cis_veQTL_sig)) # 148
 print(paste0('Ctrl_trans_veQTL_sig',p_val_text))
-print(nrow(Ctrl_trans_veQTL_sig)) # 724; 488 if more than 100 in the HET
+print(nrow(Ctrl_trans_veQTL_sig)) # 724 -> 703
 print(paste0('HS_trans_veQTL_sig',p_val_text))
-print(nrow(HS_trans_veQTL_sig)) # 531266: 380850 if more than 100 in the HET
- 
+print(nrow(HS_trans_veQTL_sig)) # 531266 -> 527658
+
 print(paste0('Ctrl_cis_eqtl_sig',p_val_text))
 print(nrow(Ctrl_cis_eqtl_sig)) # 86250
 print(paste0('HS_cis_eqtl_sig',p_val_text))
@@ -260,14 +237,16 @@ print(paste0('Ctrl_trans_eqtl_sig',p_val_text))
 print(nrow(Ctrl_trans_eqtl_sig)) # 702776
 print(paste0('HS_trans_eqtl_sig',p_val_text))
 print(nrow(HS_trans_eqtl_sig)) # 383026
-
+# unaltered
 
 #########################################################################################
 # (1b) Dividing these in control-only shared, HS-only shared, and shared - pval #########
 #########################################################################################
 
 # Initialize the output dataframe
-row_labels <- c("cis_FDR<0.2", "cis_FDR<0.1", "cis_FDR<0.05", "trans_FDR<0.2", "trans_FDR<0.1", "trans_FDR<0.05","cisandtrans_FDR<0.2", "cisandtrans_FDR<0.1", "cisandtrans_FDR<0.05")
+row_labels <- c("cis_FDR<0.2", "cis_FDR<0.1", "cis_FDR<0.05", 
+                "trans_FDR<0.2", "trans_FDR<0.1", "trans_FDR<0.05",
+                "cisandtrans_FDR<0.2", "cisandtrans_FDR<0.1", "cisandtrans_FDR<0.05")
 
 veQTL_GxE_table <- data.frame(
   SharedCutoff = row_labels,
@@ -390,18 +369,19 @@ for (FDR in FDR_cutoffs) {
 # View and save final summary table for this
 View(veQTL_GxE_table)
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\GxE")
-write.csv(veQTL_GxE_table,'veQTL_GxE_table_het100.csv')
+write.csv(veQTL_GxE_table,'veQTL_GxE_table.csv')
 
 # Turn it into a percentage
 veQTL_GxE_table_percent <- veQTL_GxE_table
-veQTL_GxE_table_percent[1:3,2:4] <- veQTL_GxE_table[1:3,2:4]*100/(sum(veQTL_GxE_table[1,2:4]))
-veQTL_GxE_table_percent[4:6,2:4] <- veQTL_GxE_table[4:6,2:4]*100/(sum(veQTL_GxE_table[5,2:4]))
-veQTL_GxE_table_percent[7:9,2:4] <- veQTL_GxE_table[7:9,2:4]*100/(sum(veQTL_GxE_table[9,2:4]))
-veQTL_GxE_table_percent[1:3,5:7] <- veQTL_GxE_table[1:3,5:7]*100/(sum(veQTL_GxE_table[1,5:7]))
-veQTL_GxE_table_percent[4:6,5:7] <- veQTL_GxE_table[4:6,5:7]*100/(sum(veQTL_GxE_table[5,5:7]))
-veQTL_GxE_table_percent[7:9,5:7] <- veQTL_GxE_table[7:9,5:7]*100/(sum(veQTL_GxE_table[9,5:7]))
+for (n_pval in 0:2){
+firstrow <- (n_pval*3)+1
+lastrow <- firstrow + 2
+veQTL_GxE_table_percent[firstrow:lastrow,2:4] <- veQTL_GxE_table[firstrow:lastrow,2:4]*100/(sum(veQTL_GxE_table[firstrow,2:4]))
+veQTL_GxE_table_percent[firstrow:lastrow,5:7] <- veQTL_GxE_table[firstrow:lastrow,5:7]*100/(sum(veQTL_GxE_table[firstrow,5:7]))
+}
 veQTL_GxE_table_percent[,2:7] <- round(veQTL_GxE_table_percent[,2:7],digits = 2)
 View(veQTL_GxE_table_percent)
+write.csv(veQTL_GxE_table_percent,'veQTL_GxE_table_percent.csv')
 
 # Make a plot of the percentages
 veQTL_GxE_table_percent_separated <- veQTL_GxE_table_percent %>%
@@ -409,8 +389,8 @@ veQTL_GxE_table_percent_separated <- veQTL_GxE_table_percent %>%
 # Shared is the opposite direction actually, turn the signs around
 veQTL_GxE_table_percent_separated$shared_cutoff <- 
   factor(veQTL_GxE_table_percent_separated$shared_cutoff,
-         levels = c("FDR<0.05", "FDR<0.1", "FDR<0.2")
-  )
+  levels = c("FDR<0.05", "FDR<0.1", "FDR<0.2")
+)
 # Define the columns to plot
 columns_to_plot <- colnames(veQTL_GxE_table_percent_separated)[3:8]
 
@@ -431,14 +411,9 @@ for (col_name in columns_to_plot) {
     scale_y_continuous(limits = c(0, 100)) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
   
-  print(p)
-  
   # Save plot
-  ggsave(filename = paste0(col_name, "_veQTL_dotplot_het100.svg"),
-         plot = p, width = 6, height = 4, dpi = 300)
+  ggsave(filename = paste0(col_name, "_veQTL_dotplot.svg"),plot = p, width = 6, height = 4, dpi = 300)
 }
-
-# At Het = 100, still similar -> mostly HS-specific genes and SNPs
 
 #########################
 # (2) eGenes and vGenes #
@@ -468,19 +443,19 @@ vGenes_HS <- c(cis_vGenes_HS,trans_vGenes_HS)
 # Combined cis and trans
 veQTL_GxE_table_plot <- veQTL_GxE_table[veQTL_GxE_table$SharedCutoff %in% 'cisandtrans_FDR<0.1',]
 veQTL_GxE_table_plot_gene_values <- c((8763-veQTL_GxE_table_plot$GxE_Ctrl_genes- 
-                                         veQTL_GxE_table_plot$Shared_genes- 
-                                         veQTL_GxE_table_plot$GxE_HS_genes), 
-                                      veQTL_GxE_table_plot$GxE_Ctrl_genes, 
-                                      veQTL_GxE_table_plot$Shared_genes, 
-                                      veQTL_GxE_table_plot$GxE_HS_genes)
+                              veQTL_GxE_table_plot$Shared_genes- 
+                              veQTL_GxE_table_plot$GxE_HS_genes), 
+                              veQTL_GxE_table_plot$GxE_Ctrl_genes, 
+                              veQTL_GxE_table_plot$Shared_genes, 
+                              veQTL_GxE_table_plot$GxE_HS_genes)
 # Read in the eQTL values, which have been computed in a previous script
 eQTL_GxE_table_plot <- eQTL_GxE_table[eQTL_GxE_table$SharedCutoff %in% 'cisandtrans_FDR<0.1',]
 eQTL_GxE_table_plot_gene_values <- c((8763-eQTL_GxE_table_plot$GxE_Ctrl_genes- 
-                                        eQTL_GxE_table_plot$Shared_genes- 
-                                        eQTL_GxE_table_plot$GxE_HS_genes), 
-                                     eQTL_GxE_table_plot$GxE_Ctrl_genes, 
-                                     eQTL_GxE_table_plot$Shared_genes, 
-                                     eQTL_GxE_table_plot$GxE_HS_genes)
+                                    eQTL_GxE_table_plot$Shared_genes- 
+                                    eQTL_GxE_table_plot$GxE_HS_genes), 
+                                 eQTL_GxE_table_plot$GxE_Ctrl_genes, 
+                                 eQTL_GxE_table_plot$Shared_genes, 
+                                 eQTL_GxE_table_plot$GxE_HS_genes)
 # Done for all eQTL and veQTL
 data_eQTL <- data.frame(
   Partition = c("No", "Ctrl only", "Ctrl and HS", "HS only"),
@@ -523,8 +498,8 @@ veQTL_plot
 # Save plots
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Overlap_Ctrl_HS_eQTL_veQTL")
 # Number of eQTL and veQTL per gene (with at least 1 eQTL or veQTL)
-ggsave(plot = eQTL_plot, filename='eGene_overlap_plot_het100.svg', width = 3, height =1.5, dpi = 300)
-ggsave(plot = veQTL_plot, filename='vGene_overlap_plot_het100.svg', width = 3, height =1.5, dpi = 300)
+ggsave(plot = eQTL_plot, filename='eGene_overlap_plot.svg', width = 3, height = 1.5, dpi = 300)
+ggsave(plot = veQTL_plot, filename='vGene_overlap_plot.svg', width = 3, height =1.5, dpi = 300)
 
 #########################################################
 # (2b) How many SNPs per Gene? Are there hotspot genes? #
@@ -546,15 +521,15 @@ colnames(veQTL_hotspot_genes) <- c('gene_id','Ctrl_cis_veQTL_#','HS_cis_veQTL_#'
 QTL_number_per_gene <- merge(eQTL_hotspot_genes,veQTL_hotspot_genes,by = 'gene_id',all = T)
 View(QTL_number_per_gene)
 # Include genes without any QTL as well
-Genes_with_no_QTL <- setdiff(rownames(All_genes),QTL_number_per_gene$gene_id)
+Genes_with_no_QTL <- setdiff(All_genes$gene_id,QTL_number_per_gene$gene_id)
 # Create a new tibble with 0s for other columns
-new_rows <- tibble(gene_id = Genes_with_no_QTL) %>%
+new_rows <- QTL_number_per_gene %>%
+  tibble(gene_id = Genes_with_no_QTL) %>%
   mutate(across(-gene_id, ~ 0))
 # Combine the original df with the new rows
 QTL_number_per_gene_final <- bind_rows(QTL_number_per_gene, new_rows)
 # Turn NAs into 0s
 QTL_number_per_gene_final[is.na(QTL_number_per_gene_final)] <- 0 
-
 
 # Summary tables - includes the total number of genes with at least 1 eQTL or veQTL
 eQTL_hotspot_genes_summary <- as.data.frame(t(sapply(eQTL_hotspot_genes[,2:ncol(eQTL_hotspot_genes)], summary_with_count)))
@@ -567,6 +542,117 @@ View(QTL_number_per_gene_summary)
 # Comparing with Huang et al., 2015, there is a range of 1-7 independent eQTL and veQTL per gene
 # The median numbers fall within this range though the maximum numbers far surpass this
 
+
+###############################################################################################
+##### (2e) eQTL and veQTL number vs variability and mean rank in the whole transcriptome ######
+###############################################################################################
+
+All_genes <- rownames_to_column(All_genes,'gene_id')
+hotspot_genes_All_genes <- merge(QTL_number_per_gene_final,All_genes,all=T,by='gene_id')
+View(hotspot_genes_All_genes)
+
+# Make plots
+for (QTL_type in c("cis_eQTL_#","cis_veQTL_#","trans_eQTL_#","trans_veQTL_#")){
+    mean_plot_list <- list()
+    var_plot_list <- list()
+    for (condition in c("Ctrl","HS")){
+      
+      # Last, loop for each condition
+      var_category <- paste0(condition,"_VST_MAD")
+      mean_category <- paste0(condition,"_VST_Mean")
+      QTL_category <- paste0(condition,"_",QTL_type)
+      
+      # Omit 0s
+      df_subset <- hotspot_genes_All_genes %>%
+        dplyr::select(!!sym(var_category), !!sym(mean_category), !!sym(QTL_category)) %>%
+        dplyr::filter(if_all(everything(), ~ !is.na(.) & . != 0))
+      
+      # Do not omit 0s
+      df_subset <- hotspot_genes_All_genes %>%
+        dplyr::select(!!sym(var_category), !!sym(mean_category), !!sym(QTL_category))
+
+      df_subset[[var_category]] <- as.numeric(df_subset[[var_category]])
+      df_subset[[mean_category]] <- as.numeric(df_subset[[mean_category]])
+      df_subset[[QTL_category]] <- as.numeric(df_subset[[QTL_category]])
+      
+      # Extract Spearman correlation coefficient and p-value
+      spearman_test <- cor.test(y=df_subset[[var_category]], x=df_subset[[QTL_category]], method = "spearman")
+      spearman_coef <- spearman_test$estimate
+      spearman_p_value <- spearman_test$p.value
+      spearman_test_result <- paste0("Spearman rho = ",format_statistic(spearman_coef),
+             " p = ",format_statistic(spearman_p_value),"\n",
+             "Number of genes = ",nrow(df_subset))
+      
+      # Repeat spearman for mean
+      mean_spearman_test <- cor.test(y=df_subset[[mean_category]], x=df_subset[[QTL_category]], method = "spearman")
+      mean_spearman_coef <- mean_spearman_test$estimate
+      mean_spearman_p_value <- mean_spearman_test$p.value
+      mean_spearman_test_result <-paste0("Spearman rho = ",format_statistic(mean_spearman_coef),
+             " p = ",format_statistic(mean_spearman_p_value),"\n",
+             "Number of genes = ",nrow(df_subset))
+      
+      # Prepare label text
+      Var_label <- paste0(condition," transcript level variability")
+      Mean_label <- paste0(condition," mean transcript level")
+      QTL_cat_cleaned <- gsub('_',' ',QTL_category)
+      QTL_cat_cleaned <- gsub('trans ','trans-',QTL_cat_cleaned)
+      QTL_cat_cleaned <- gsub('cis ','cis-',QTL_cat_cleaned)
+      x_label <- paste0('log (',QTL_cat_cleaned,' + 1)')
+      
+      # Plot
+      var_plot <- ggplot(df_subset, aes(y = !!sym(var_category), x = log(!!sym(QTL_category)+1))) +
+        geom_point(alpha=0.5,color='darkgrey') +
+        geom_smooth(method = "lm", col = "blue",linetype='dashed')+
+        annotate("text", y = max(df_subset[[var_category]]), x = max(log(1+df_subset[[QTL_category]])), label = spearman_test_result, size = 3, hjust = 1,vjust = 1)+
+        ylab(Var_label)+
+        xlab(x_label)+
+        theme(axis.title.x = element_text(size = 10),
+              axis.title.y = element_text(size = 10),
+              plot.title = element_text(size = 7.5))+
+        theme_classic()
+      
+      mean_plot <- ggplot(df_subset, aes(y = !!sym(mean_category), x = log(!!sym(QTL_category)+1))) +
+        geom_point(alpha=0.5,color='darkgrey') +
+        geom_smooth(method = "lm", col = "blue",linetype='dashed')+
+        annotate("text", y = max(df_subset[[mean_category]]), x = max(log(1+df_subset[[QTL_category]])), label = mean_spearman_test_result, size = 3, hjust = 1,vjust = 1)+
+        ylab(Mean_label)+
+        xlab(x_label)+
+        theme(axis.title.x = element_text(size = 10),
+              axis.title.y = element_text(size = 10),
+              plot.title = element_text(size = 7.5))+
+        theme_classic()
+      
+      mean_plot_list[[mean_category]] <- mean_plot
+      var_plot_list[[var_category]] <- var_plot
+    }
+    # Save the plots
+    setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\eQTL_veQTL_meanvar_plots")
+    mean_plots <- wrap_plots(mean_plot_list, nrow = 2)  # Arrange in 2 columns
+    print(mean_plots)
+    ggsave(plot = mean_plots,filename = paste0("MeanCor_",QTL_category,"plot.svg"),width=3,height=6,dpi=300)
+    var_plots <- wrap_plots(var_plot_list, nrow = 2)  # Arrange in 2 columns
+    print(var_plots)
+    ggsave(plot = var_plots,filename = paste0("VarCor_",QTL_category,"plot.svg"),width=3,height=6,dpi=300)
+}
+
+# cis-eQTL number
+# Voom - Small (in HS, insignificant) positive with variability and mean
+# VST - Larger positive with variability and small positive with mean
+
+# cis-veQTL number
+# Voom - Ctrl-cis: 3 high-variability genes
+# VST - Ctrl-cis: 2 high-variability and one super low-variability
+
+# trans-eQTL number
+# Voom - Small negative with variability and positive with mean
+# VST - Larger positive with variability and negative with mean
+
+# trans-veQTL number (comment on Ctrl_trans)
+# Voom - Positive with variability and negative with mean
+# VST - Weaker positive with variability and negative with mean
+
+# The cis- and trans- eQTL plots provide evidence that at least some of the high-mean high-variance genes in the VST plot are those with higher-than-normal numbers of eQTL
+# The trans-veQTL plots provide evidence that the number of trans-veQTL scales with the raw variance
 
 #######################
 # (3) eQTLs and vQTLs #
@@ -595,18 +681,18 @@ veQTL_HS <- c(cis_veQTL_HS,trans_veQTL_HS)
 
 # Obtain the veQTL values which have been computed here
 veQTL_GxE_table_plot_SNP_values <- c((383710-veQTL_GxE_table_plot$GxE_Ctrl_SNPs- 
-                                        veQTL_GxE_table_plot$Shared_SNPs- 
-                                        veQTL_GxE_table_plot$GxE_HS_SNPs), 
-                                     veQTL_GxE_table_plot$GxE_Ctrl_SNPs, 
-                                     veQTL_GxE_table_plot$Shared_SNPs, 
-                                     veQTL_GxE_table_plot$GxE_HS_SNPs)/1000
+                                         veQTL_GxE_table_plot$Shared_SNPs- 
+                                         veQTL_GxE_table_plot$GxE_HS_SNPs), 
+                                      veQTL_GxE_table_plot$GxE_Ctrl_SNPs, 
+                                      veQTL_GxE_table_plot$Shared_SNPs, 
+                                      veQTL_GxE_table_plot$GxE_HS_SNPs)/1000
 # Read in the eQTL values, which have been computed in a previous script
 eQTL_GxE_table_plot_SNP_values <- c((383710-eQTL_GxE_table_plot$GxE_Ctrl_SNPs- 
-                                       eQTL_GxE_table_plot$Shared_SNPs- 
-                                       eQTL_GxE_table_plot$GxE_HS_SNPs), 
-                                    eQTL_GxE_table_plot$GxE_Ctrl_SNPs, 
-                                    eQTL_GxE_table_plot$Shared_SNPs, 
-                                    eQTL_GxE_table_plot$GxE_HS_SNPs)/1000
+                                        eQTL_GxE_table_plot$Shared_SNPs- 
+                                        eQTL_GxE_table_plot$GxE_HS_SNPs), 
+                                     eQTL_GxE_table_plot$GxE_Ctrl_SNPs, 
+                                     eQTL_GxE_table_plot$Shared_SNPs, 
+                                     eQTL_GxE_table_plot$GxE_HS_SNPs)/1000
 
 # Horizontal barplot visualisation
 data_eQTL_SNPs <- data.frame(
@@ -652,155 +738,200 @@ veQTL_SNP_plot
 # Save plots
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Overlap_Ctrl_HS_eQTL_veQTL")
 # Number of eQTL and veQTL per gene (with at least 1 eQTL or veQTL)
-ggsave(plot = eQTL_SNP_plot, filename='eQTL_SNP_overlap_plot_het100.svg', width = 3, height = 1.5, dpi = 300)
-ggsave(plot = veQTL_SNP_plot, filename='veQTL_SNP_overlap_plot_het100.svg', width = 3, height =1.5, dpi = 300)
+ggsave(plot = eQTL_SNP_plot, filename='eQTL_SNP_overlap_plot.svg', width = 3, height = 1.5, dpi = 300)
+ggsave(plot = veQTL_SNP_plot, filename='veQTL_SNP_overlap_plot.svg', width = 3, height =1.5, dpi = 300)
 
-# Eliminates 5.5% of veQTL
+
+##############################################################################
+# (3b) How many genes per SNP? Are there hotspot SNPs that regulate many genes?
+##############################################################################
+
+# Get the number of hotspot QTL for each test within one table
+hotspot_SNPs <- merge(data.frame(table(Ctrl_cis_eqtl_sig$variant_id)),data.frame(table(Ctrl_trans_eqtl_sig$variant_id)),all = T,by='Var1')
+hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(HS_cis_eqtl_sig$variant_id)),all = T,by='Var1')
+hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(HS_trans_eqtl_sig$variant_id)),all = T,by='Var1')
+hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(Ctrl_cis_veQTL_sig$SNP)),all = T,by='Var1')
+hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(HS_cis_veQTL_sig$SNP)),all = T,by='Var1')
+hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(Ctrl_trans_veQTL_sig$SNP)),all = T,by='Var1')
+hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(HS_trans_veQTL_sig$SNP)),all = T,by='Var1')
+colnames(hotspot_SNPs) <- c('SNP','Ctrl_cis_eQTLs','Ctrl_trans_eQTLs','HS_cis_eQTLs','HS_trans_eQTLs','Ctrl_cis_veQTLs','HS_cis_veQTLs','Ctrl_trans_veQTLs','HS_trans_veQTLs')
+hotspot_SNPs_summary <- as.data.frame(t(sapply(hotspot_SNPs[,2:ncol(hotspot_SNPs)], summary_with_count)))
+View(hotspot_SNPs_summary)
+
+# There have been no comparison of the number of genes sharing eQTL/veQTL in Huang et al., 2015
+# Save for the number of genetically-correlated transcripts based on MMC but not on eQTL/veQTL number
+# Thus, these are new results 
+# The strongest HS hotspot veQTL affects more genes than the strongest Ctrl veQTL
+# Plot the pleiotropy per eQTL and veQTL category 
+for (SNP_column in c('Ctrl_cis_eQTLs','Ctrl_trans_eQTLs','HS_cis_eQTLs','HS_trans_eQTLs')){
+  data <- data.frame(value = hotspot_SNPs[, SNP_column])
+  data <- na.omit(data)
+  binwidth <- ifelse(max(data)<10,1,
+                     (max(data$value) - min(data$value)) / max(data$value))  
+  eQTL_pleiotropy <- ggplot(data) +
+    geom_histogram(
+      aes(x = value),
+      binwidth = binwidth,
+      center = 0,
+      bins = 10,
+      position = "identity",
+      color = "black",
+      fill = "#4F8E4D"
+    ) +
+    theme_classic() +
+    labs(
+      title = gsub('s e','s-e',gsub('_',' ', SNP_column)),
+      subtitle = paste0(nrow(data),' SNPs'),
+      x = "# of regulated genes per SNP",
+      y = '# of SNPs (log scale)'
+    ) +
+    theme(
+      plot.title = element_text(face = "bold"),
+      legend.title = element_text(face = "bold")
+    )+
+    scale_y_continuous(
+      trans = pseudo_log_trans(base = 10),
+      breaks = c(0, 1, 10, 100, 1000, 10000)
+    )
+  setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Hotspot_SNPs")
+  ggsave(plot = eQTL_pleiotropy,filename = paste0("SNP_pleiotropy,",SNP_column,"_plot.svg"),height=3,width=3,dpi=300)
+}
+
+# Plot the pleiotropy per eQTL and veQTL category 
+for (SNP_column in c('Ctrl_cis_veQTLs','Ctrl_trans_veQTLs','HS_cis_veQTLs','HS_trans_veQTLs')){
+  data <- data.frame(value = hotspot_SNPs[, SNP_column])
+  data <- na.omit(data)
+  binwidth <- ifelse(max(data)<10,1,
+  (max(data$value) - min(data$value)) / max(data$value))
+  veQTL_pleiotropy <- ggplot(data) +
+    geom_histogram(
+      aes(x = value),
+      bins = 10,
+      binwidth = binwidth,
+      center = 0,
+      position = "identity",
+      color = "black",
+      fill= '#611BB8'
+    ) +
+    theme_classic() +
+    labs(
+      title = gsub('s ve','s-ve',gsub('_',' ', SNP_column)),
+      subtitle = paste0(nrow(data),' SNPs'),
+      x = "# of regulated genes per SNP",
+      y = "# of SNPs (log scale)"
+    ) +
+    theme(
+      plot.title = element_text(face = "bold"),
+      legend.title = element_text(face = "bold")
+    )+
+    scale_y_continuous(
+      trans = pseudo_log_trans(base = 10),
+      breaks = c(0, 1, 10, 100, 1000, 10000)
+    )
+  setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Hotspot_SNPs")
+  ggsave(plot = veQTL_pleiotropy,filename = paste0("SNP_pleiotropy,",SNP_column,"_plot.svg"),height=3,width=3,dpi=300)
+}
 
 ###############################################################################
 # (3c) Do the SNP sets have biases in minor allele frequency? eQTL vs veQTL ###
 ###############################################################################
 
+# MAFs 
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\MAF")
+# Contrl and HS overlapping density plots
+MAF_long <- data.frame(MAF = c(MAF$Ctrl_MAF,MAF$HS_MAF),
+                       Condition = c(rep("Ctrl", length(MAF$Ctrl_MAF)),
+                         rep("HS", length(MAF$HS_MAF))))
+
+# MAF density plot
+MAF_density <- ggplot(MAF_long, aes(x = MAF, col = Condition)) +
+  geom_density(adjust = 2) +
+  scale_color_manual(values = c("Ctrl" = "#C6B49E", "HS" = "#DF9F65")) +  
+  theme_classic() +
+  labs(x = "MAF", y = "Density", fill = "Condition") +
+  theme(legend.position = c(0.25, 0.25),            # Position legend inside plot
+        legend.background = element_rect(fill = "white", color = "white"),
+        legend.title = element_text(size = 9),
+        legend.text = element_text(size = 9))+coord_cartesian(ylim=c(0.9,4),xlim=c(0,0.5))
+MAF_density
+ggsave(plot = MAF_density,filename = paste0("HS_Ctrl_MAF_Density_plot.svg"),height=3,width=3,dpi=300)
+
+# Control vs HS MAF
+MAF_spearman_test <- cor.test(y=MAF$HS_MAF, x=MAF$Ctrl_MAF, method = "spearman")
+MAF_spearman_coef <- MAF_spearman_test$estimate
+MAF_spearman_p_value <- MAF_spearman_test$p.value
+MAF_spearman_test_result <-paste0("rho = ",format_statistic(MAF_spearman_coef),
+                                   "\n","p = ",format_P_handle0(MAF_spearman_p_value))
+
+MAF_correlation <- ggplot(MAF, aes(y = HS_MAF, x = Ctrl_MAF)) +
+  geom_point(size = 0.8, alpha = 0.5,col='darkgrey') +
+  geom_smooth(method = "lm", col = "blue",linetype='dashed')+
+  annotate("text", y = max(MAF$HS_MAF), x = min(MAF$HS_MAF), label = MAF_spearman_test_result, size = 3, hjust = 0,vjust = 1)+
+  ylab('MAF (HS)')+
+  xlab('MAF (Ctrl)')+
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 15),
+        axis.title.y = element_text(size = 15),
+  plot.background = element_rect(fill = "transparent", color = NA))+
+  coord_cartesian(xlim = c(0, 0.5), ylim = c(0, 0.5)) +
+  scale_x_continuous(breaks = c(0, seq(0.1, 0.5, 0.1))) +
+  scale_y_continuous(breaks = c(0, seq(0.1, 0.5, 0.1)))
+MAF_correlation
+#ggsave(plot = MAF_correlation,filename = paste0("HS_Ctrl_MAF_Correlation_plot.svg"),height=2,width=2, bg = "transparent",dpi=300)
+# Note: This is a HUGE svg because it contains 400K points
+
 # eQTL list
 eQTL_list <- list(
-  All = unique(c(Ctrl_cis_eqtl_sig$SNP,
-                 Ctrl_trans_eqtl_sig$SNP,
-                 HS_cis_eqtl_sig$SNP,
-                 HS_trans_eqtl_sig$SNP)),
-  All_cis = unique(c(Ctrl_cis_eqtl_sig$SNP,
-                     HS_cis_eqtl_sig$SNP)),
-  All_trans = unique(c(Ctrl_trans_eqtl_sig$SNP,
-                       HS_trans_eqtl_sig$SNP))
+  All = unique(c(Ctrl_cis_eqtl_sig$variant_id,
+                      Ctrl_trans_eqtl_sig$variant_id,
+                      HS_cis_eqtl_sig$variant_id,
+                    HS_trans_eqtl_sig$variant_id)),
+  All_cis = unique(c(Ctrl_cis_eqtl_sig$variant_id,
+                         HS_cis_eqtl_sig$variant_id)),
+  All_trans = unique(c(Ctrl_trans_eqtl_sig$variant_id,
+                            HS_trans_eqtl_sig$variant_id))
 )
 
 # veQTL list
 veQTL_list <- list(
   All = unique(c(Ctrl_cis_veQTL_sig$SNP,
-                 Ctrl_trans_veQTL_sig$SNP,
-                 HS_cis_veQTL_sig$SNP,
-                 HS_trans_veQTL_sig$SNP)),
+                      Ctrl_trans_veQTL_sig$SNP,
+                      HS_cis_veQTL_sig$SNP,
+                      HS_trans_veQTL_sig$SNP)),
   All_cis = unique(c(Ctrl_cis_veQTL_sig$SNP,
-                     HS_cis_veQTL_sig$SNP)),
+                          HS_cis_veQTL_sig$SNP)),
   All_trans = unique(c(Ctrl_trans_veQTL_sig$SNP,
-                       HS_trans_veQTL_sig$SNP))
+                            HS_trans_veQTL_sig$SNP))
 )
 
-# Plot eQTL and veQTL MAF histograms next to each other
-compare_MAFs_eQTL_veQTL_het <- function(eQTL_datasets, veQTL_datasets, MAF_df) {
-  # MAF column selector
-  get_maf_column <- function(name) {
-    if (grepl("^Ctrl", name)) return("Ctrl_MAF")
-    if (grepl("^HS", name)) return("HS_MAF")
-    return("Avg_MAF")  # For "All" sets
-  }
-  
-  results <- data.frame(
-    Comparison = character(),
-    KS_p = numeric(),
-    T_p = numeric(),
-    medianDiff = numeric(),
-    stringsAsFactors = FALSE
-  )
-  
-  for (name in names(eQTL_datasets)) {
-    if (!name %in% names(veQTL_datasets)) next
-    
-    message("Processing: ", name)
-    maf_col <- get_maf_column(name)
-    
-    eqtl_snps <- unique(eQTL_datasets[[name]])
-    veqtl_raw <- veQTL_datasets[[name]]
-    veqtl_snps <- if (is.data.frame(veqtl_raw)) unique(veqtl_raw$SNP) else unique(veqtl_raw)
-    
-    # Filter to SNPs present in MAF_df
-    eqtl_snps <- eqtl_snps[eqtl_snps %in% rownames(MAF_df)]
-    veqtl_snps <- veqtl_snps[veqtl_snps %in% rownames(MAF_df)]
-    
-    eqtl_maf <- MAF_df[eqtl_snps, maf_col, drop = TRUE]
-    veqtl_maf <- MAF_df[veqtl_snps, maf_col, drop = TRUE]
-    
-    # Remove NA values
-    eqtl_maf <- eqtl_maf[!is.na(eqtl_maf)]
-    veqtl_maf <- veqtl_maf[!is.na(veqtl_maf)]
-    
-    if (length(eqtl_maf) < 3 || length(veqtl_maf) < 3) next
-    
-    # Statistical tests
-    ks_res <- ks.test(eqtl_maf, veqtl_maf)
-    w_res <- wilcox.test(eqtl_maf, veqtl_maf)
-    median_eqtl <- median(eqtl_maf)
-    median_veqtl <- median(veqtl_maf)
-    
-    # Format p-values
-    format_P_handle0 <- function(p) {
-      if (is.na(p)) return("NA")
-      else if (p == 0) return("2.2e-16")
-      else return(formatC(p, format = "e", digits = 2))
-    }
-    ks_p <- format_P_handle0(ks_res$p.value)
-    wilcox_p <- format_P_handle0(w_res$p.value)
-    
-    results <- rbind(results, data.frame(
-      Comparison = name,
-      KS_p = ks_p,
-      Wilcox_p = wilcox_p,
-      eQTL_median_MAF = median_eqtl,
-      veQTL_median_MAF = median_veqtl,
-      eQTL_n = length(eqtl_maf),
-      veQTL_n = length(veqtl_maf)
-    ))
-    
-    # Prepare plot data
-    plot_data <- rbind(
-      data.frame(Group = "eQTL", MAF = eqtl_maf),
-      data.frame(Group = "veQTL", MAF = veqtl_maf)
-    )
-    
-    # Bin and normalize within each group
-    bin_breaks <- seq(0, 0.5, length.out = 11)
-    plot_data_binned <- plot_data %>%
-      mutate(Bin = cut(MAF, breaks = bin_breaks, include.lowest = TRUE, right = FALSE)) %>%
-      group_by(Group, Bin) %>%
-      summarise(Count = n(), .groups = "drop") %>%
-      group_by(Group) %>%
-      mutate(Percent = Count / sum(Count) * 100)
-    
-    # Plot with all requested changes
-    p_legend <- ggplot(plot_data_binned, aes(x = Bin, y = Percent, fill = Group)) +
-      geom_bar(stat = "identity", position = "dodge", color = "black", alpha = 0.8) +
-      theme_classic() +
-      labs(
-        title = paste0("Kolmogorov-Smirnoff p = ", ks_p, " | Wilcox p = ", wilcox_p),
-        x = "MAF",
-        y = "Percent of all QTL"
-      ) +
-      scale_fill_manual(
-        values = c("eQTL" = "#4F8E4D", "veQTL" = "#611BB8"),  # Updated eQTL color
-        labels = c(
-          paste0("eQTL (n = ", length(eqtl_maf), ", median = ", round(median_eqtl, 3), ")"),
-          paste0("veQTL (n = ", length(veqtl_maf), ", median = ", round(median_veqtl, 3), ")")
-        ),
-        name = NULL) + theme(
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
-        axis.title.x = element_text(size = 14),
-        axis.title.y = element_text(size = 14),
-        legend.position = c(1, 1),  # Legend inside plot (top-right)
-        legend.justification = c(1, 1),  # Anchor to top-right corner
-        legend.background = element_rect(fill = "white", color = "black"),  # Legible background
-        legend.text = element_text(size = 12),
-        plot.title = element_text(size = 11, face = "bold", hjust = 0.5)
-      )
-    p <- p_legend + theme(legend.position = "none")
-    setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\MAF")
-    ggsave(filename = paste0(name, "_MAF_comparison_het100.svg"), plot = p, width = 4.7, height = 4,dpi=300)
-    ggsave(filename = paste0(name, "_MAF_comparison_het100legend.svg"), plot = p_legend, width = 4.7, height = 4,dpi=300)
-  }
-  return(results)
-}
-
-MAFs_eQTL_veQTL <- compare_MAFs_eQTL_veQTL_het(eQTL_datasets=eQTL_list, 
+compare_MAFs_eQTL_veQTL(eQTL_datasets=eQTL_list, 
                                            veQTL_datasets=veQTL_list, 
                                            MAF_df=MAF)
 
-# At het = 100, the tail is erased but the median is still lower
-# Still different distributions with a lean towards low-frequency
+##############################################################
+##### Save files and working environment so far ##############
+##############################################################
+
+# Save necessary columns of top veQTL
+plotting_columns <- c("GENE", "CHROM","POS","SNP","REF","ALT","P","vfdr","COR")
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping")
+write.csv(HS_cis_veQTL_sig[,plotting_columns],"HS_cis_veQTL_sig.csv")
+write.csv(Ctrl_cis_veQTL_sig[,plotting_columns],"Ctrl_cis_veQTL_sig.csv")
+write.csv(Ctrl_trans_veQTL_sig[,plotting_columns],"Ctrl_trans_veQTL_sig.csv")
+write.csv(HS_trans_veQTL_sig[,plotting_columns],"HS_trans_veQTL_sig.csv")
+
+# Save hotspot genes 
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Hotspot_Genes/")
+# Number of eQTL and veQTL per gene (with at least 1 eQTL or veQTL)
+write.csv(QTL_number_per_gene_final,'QTL_number_per_gene.csv')
+# Number of QTL for eGenes and vGenes
+write.csv(QTL_number_per_gene_summary,'QTL_number_per_gene_summary.csv')
+
+# Save hotspot SNPs
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Hotspot_SNPs/")
+write.csv(hotspot_SNPs,'hotspot_SNPs.csv')
+write.csv(hotspot_SNPs_summary,'hotspot_SNPs_summaries.csv')
+
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping")
+save.image(file='5_Investigating_eQTL_and_veQTL_remake.RData')
+

@@ -1,6 +1,6 @@
 # Investigating top hotspot veQTL that form the tail of the HS trans-veQTL 
 
-# Last Updated: 8/8/25
+# Last Updated: 9/4/26
 
 #################################
 ##### Packages and Setup ########
@@ -21,7 +21,7 @@ library(svglite)
 
 # Load saved script environment
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Hotspot_SNPs\\HS_trans_veQTL_analyses/")
-load(file = '8_Hotspot_HS_trans_veQTL_analysis.RData')
+#load(file = '8_Hotspot_HS_trans_veQTL_analysis.RData')
 
 # Functions
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Code")

@@ -5,7 +5,7 @@
 # The resultant summary statistics are then plugged back into this file
 # to generate plots
 
-# Last Updated: 22/9/25
+# Last Updated: 9/4/26
 
 #################################
 ##### Packages and Setup ########
@@ -29,7 +29,7 @@ library(purrr)
 
 # Load saved environment
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping")
-load(file='6_Investigating_eQTL_and_veQTL_Allele_Age2.RData')
+#load(file='6_Investigating_eQTL_and_veQTL_Allele_Age2.RData')
 
 # Functions
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Code")
@@ -44,7 +44,6 @@ source('QTL_Analysis_Functions.R')
 
 # Continues with objects saved in the following .RData files
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
-load(file='5_Investigating_eQTL_and_veQTL.RData')
 load(file='6_Investigating_eQTL_and_veQTL_Allele_Age1.RData')
 
 # MAFs for each SNP in each condition
@@ -472,59 +471,3 @@ setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs Hi
 save.image(file='6_Investigating_eQTL_and_veQTL_Allele_Age2.RData')
 
 
-
-################# Old: non-downsampling method for veQTL #####################
-
-# First let us reduce down the FDI lists to those with more than 1 gene 
-# And sort these by MAF
-setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Derived_Allele_Increased_Fraction_Null")
-
-# MAF Criteria.txt
-Ctrl_FDI_SNP_MAF <- MAF[Ctrl_trans_per_veQTL_FDI$SNP,'Ctrl_MAF']
-Ctrl_MAF_Criteria <- data.frame(Quintile=1:5,Min=1:5,Max=1:5,NumSNPstoSample=1:5)
-for (quintile in 1:5){
-  min = (quintile-1)*0.2
-  max = 0.2+min
-  Ctrl_MAF_Criteria[quintile,'Min']=quantile(Ctrl_FDI_SNP_MAF,min)
-  Ctrl_MAF_Criteria[quintile,'Max']=quantile(Ctrl_FDI_SNP_MAF,max)
-  Ctrl_MAF_Criteria[quintile,'NumSNPstoSample']=round(length(Ctrl_FDI_SNP_MAF)/5)
-}
-write.table(Ctrl_MAF_Criteria,'Ctrl_trans-veQTL_MAF_Criteria.txt',row.names = F,col.names = T,quote = F)
-
-HS_FDI_SNP_MAF <- MAF[HS_trans_per_veQTL_FDI$SNP,'HS_MAF']
-HS_MAF_Criteria <- data.frame(Quintile=1:5,Min=1:5,Max=1:5,NumSNPstoSample=1:5)
-for (quintile in 1:5){
-  min = (quintile-1)*0.2
-  max = 0.2+min
-  HS_MAF_Criteria[quintile,'Min']=quantile(HS_FDI_SNP_MAF,min)
-  HS_MAF_Criteria[quintile,'Max']=quantile(HS_FDI_SNP_MAF,max)
-  HS_MAF_Criteria[quintile,'NumSNPstoSample']=round(length(HS_FDI_SNP_MAF)/5)
-}
-write.table(HS_MAF_Criteria,'HS_trans-veQTL_MAF_Criteria.txt',row.names = F,col.names = T,quote = F)
-View(HS_MAF_Criteria)
-
-# non-veQTL_SNPs.txt - SNPs and their MAFs
-# needs to have age and NOT be a veQTL
-non_Ctrl_veQTL_aged<- intersect(setdiff(SNPs_position_map$SNP,Ctrl_trans_per_veQTL_FDI$SNP),unique(SNP_allele_age$SNP))
-length(non_Ctrl_veQTL_aged)
-# 121K of these 
-non_Ctrl_trans_veQTL_by_MAF <- data.frame(SNP=non_Ctrl_veQTL_aged,MAF=MAF[non_Ctrl_veQTL_aged,'Ctrl_MAF'])
-View(non_Ctrl_trans_veQTL_by_MAF)
-write.table(non_Ctrl_trans_veQTL_by_MAF,'Ctrl_non-trans-veQTL_SNPs.txt',row.names = F,col.names = T,quote = F)
-# Repeat for HS
-non_HS_veQTL_aged<- intersect(setdiff(SNPs_position_map$SNP,HS_trans_per_veQTL_FDI$SNP),unique(SNP_allele_age$SNP))
-length(non_HS_veQTL_aged)
-# 95K of these 
-non_HS_trans_veQTL_by_MAF <- data.frame(SNP=non_HS_veQTL_aged,MAF=MAF[non_HS_veQTL_aged,'HS_MAF'])
-View(non_HS_trans_veQTL_by_MAF)
-write.table(non_HS_trans_veQTL_by_MAF,'HS_non-trans-veQTL_SNPs.txt',row.names = F,col.names = T,quote = F)
-
-# HS a little bit weird - check how many SNPs per MAF category can be selected for these SNPs
-for (row in 1:nrow(HS_MAF_Criteria)){
-  Min <-HS_MAF_Criteria[row,'Min']
-  Max <-HS_MAF_Criteria[row,'Max']
-  print(nrow(subset(non_HS_trans_veQTL_by_MAF, MAF>Min & MAF<Max)))
-}
-# 15K - 24K -> there should be a lot of variation to choose within the set
-# It is not that the algorithm selects the same 5K SNPs every time...
-# Though there is a more limited set of lowest MAFs than highest MAFs...

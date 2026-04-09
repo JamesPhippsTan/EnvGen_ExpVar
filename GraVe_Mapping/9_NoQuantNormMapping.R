@@ -2,7 +2,7 @@
 # If there is an impact, then the disparity should be reflected in the number 
 # Of cis-eQTL 
 
-# Last updated: 22/10/2025
+# Last updated: 7/4/2026
 
 ##############################
 ##### Packages and Setup #####
@@ -170,13 +170,12 @@ return(veQTL_df)
 # Cis-veQTL with QN
 Ctrl_cis_veQTL <- add_SNP_col(read.table("Ctrl_cis_veQTL.txt", header = T,skipNul = T))
 HS_cis_veQTL <- add_SNP_col(read.table("HS_cis_veQTL.txt", header = T,skipNul = T))
-# Only difference is the lack of transformation
 
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\noQN/")
 
 # Cis-veQTL without QN
-Ctrl_cis_veQTL_noQN <- add_SNP_col(read.table("Ctrl_cis_veQTL_noQN.txt", header = T,skipNul = T))
-HS_cis_veQTL_noQN <- add_SNP_col(read.table("HS_cis_veQTL_noQN.txt", header = T,skipNul = T))
+Ctrl_cis_veQTL_noQN <- add_SNP_col(read.table("remap_Ctrl_cis_veQTL_noQN.txt", header = T,skipNul = T))
+HS_cis_veQTL_noQN <- add_SNP_col(read.table("remap_HS_cis_veQTL_noQN.txt", header = T,skipNul = T))
 # Only difference is the lack of transformation
 
 n_cis_tests <- nrow(Ctrl_cis_veQTL)
@@ -201,15 +200,15 @@ length(unique(HS_cis_veQTL_sig$SNP)) # 145 SNPs
 Ctrl_cis_veQTL_noQN$vfdr <- p.adjust(Ctrl_cis_veQTL_noQN$P,method = 'BH',n=n_cis_tests)
 Ctrl_cis_veQTL_noQN_sig <- subset(Ctrl_cis_veQTL_noQN,vfdr<0.05) 
 max(Ctrl_cis_veQTL_noQN_sig$P) # 1.60384e-05
-nrow(Ctrl_cis_veQTL_noQN_sig) # 235
+nrow(Ctrl_cis_veQTL_noQN_sig) # 236
 length(unique(Ctrl_cis_veQTL_noQN_sig$GENE)) # 114 genes
-length(unique(Ctrl_cis_veQTL_noQN_sig$SNP)) # 221 SNPs
+length(unique(Ctrl_cis_veQTL_noQN_sig$SNP)) # 222 SNPs
 HS_cis_veQTL_noQN$vfdr <- p.adjust(HS_cis_veQTL_noQN$P,method = 'BH',n=n_cis_tests)
 HS_cis_veQTL_noQN_sig <- subset(HS_cis_veQTL_noQN,vfdr<0.05) 
-max(HS_cis_veQTL_noQN_sig$P) # 7.16092e-05
-nrow(HS_cis_veQTL_noQN_sig) # 1049
-length(unique(HS_cis_veQTL_noQN_sig$GENE)) # 586 genes
-length(unique(HS_cis_veQTL_noQN_sig$SNP)) # 1006 SNPs
+max(HS_cis_veQTL_noQN_sig$P) # 7.1126e-05
+nrow(HS_cis_veQTL_noQN_sig) # 1044
+length(unique(HS_cis_veQTL_noQN_sig$GENE)) # 581 genes
+length(unique(HS_cis_veQTL_noQN_sig$SNP)) # 1001 SNPs
 # No quantile normalisation dramatically increases the number of cis-veQTL using the BH method
 
 # How many of the pairs intersect?
@@ -241,7 +240,6 @@ length(intersect(unique(HS_cis_veQTL_sig$SNP),
 # Given the similar FDR approach and the increased number of tests
 # We expect the same excacerbations to occur in the trans-veQTL mapping
 # Resulting in an even more exagerated result if QN was not applied
-
 
 # Try the GxE calling approach
 row_labels <- c("cis_FDR<0.2", "cis_FDR<0.1", "cis_FDR<0.05")
@@ -284,6 +282,8 @@ for (FDR in FDR_cutoffs) {
   )
 }
 View(veQTL_GxE_table)
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\GxE")
+write.csv(veQTL_GxE_table,'NoQuantMapping_veQTL_GxE_table.csv')
 
 # Plot as percentages
 veQTL_GxE_table_percent <- veQTL_GxE_table
@@ -292,6 +292,7 @@ veQTL_GxE_table_percent[1:3,5:7] <- veQTL_GxE_table[1:3,5:7]*100/(sum(veQTL_GxE_
 veQTL_GxE_table_percent[,2:7] <- round(veQTL_GxE_table_percent[,2:7],digits = 2)
 View(veQTL_GxE_table_percent)
 
+write.csv(veQTL_GxE_table_percent,'NoQuantMapping_cis_veQTL_GxE_table_percent.csv')
 
 #####################################################################
 ##### (5) Check if cis-eQTL mapping results are very different ######
@@ -417,9 +418,13 @@ for (FDR in FDR_cutoffs) {
 View(veQTL_GxE_table)
 View(eQTL_GxE_table)
 
+write.csv(eQTL_GxE_table,'NoQuantMapping_cis_eQTL_GxE_table.csv')
 
-########################################
 
+
+#########
+# Extra #
+#########
 
 # Cis-veQTL without QN and without eQTL
 Ctrl_cis_veQTL_noQN_noeQTL <- read.table("Ctrl_cis_veQTL_noQNnoeQTL.txt", header = T,skipNul = T)

@@ -4,6 +4,12 @@ library(stringr)
 library(data.table)
 library(ggplot2)
 
+# Last Updated: 9/4/26
+
+
+########################### Determining and investigating veQTL #############################
+# Used in 5_Investigating_eQTL_and_veQTL.R
+
 # Function to split SNP name into chromosome and position
 extract_chromosome_and_pos <- function(data, input_col, 
                                        chrom_col = "CHROM",
@@ -33,9 +39,6 @@ extract_chromosome_and_pos <- function(data, input_col,
   return(result)
 }
 
-
-
-# Functions
 # Remove cis-veQTL from trans-veQTL mapping results
 remove_cis_veQTL <- function(trans_mapping_df,SNP_positions,gene_positions,cis_window){
   # Add the actual SNP positions to the trans-mapping result
@@ -71,13 +74,6 @@ veQTL_number_per_gene <- function(gene_df){
   return(number_of_veQTL_by_gene)
 }
 
-# Create tables with summaries of the number of SNPs or genes per hotspot genes and hotspot SNPs
-summary_with_count <- function(col) {
-  sum_stats <- summary(col)
-  num_non_na <- sum(!is.na(col))
-  c(sum_stats, Total_number = num_non_na)
-}
-
 # Handle the lower limit of p-values
 format_P_handle0 <- function(p) {
   if (is.na(p)) {
@@ -88,6 +84,14 @@ format_P_handle0 <- function(p) {
     return(formatC(p, format = "e", digits = 2))
   }
 }
+
+# Create tables with summaries of the number of SNPs or genes per hotspot genes and hotspot SNPs
+summary_with_count <- function(col) {
+  sum_stats <- summary(col)
+  num_non_na <- sum(!is.na(col))
+  c(sum_stats, Total_number = num_non_na)
+}
+
 
 # Add SNP stats and effects to an existing QTL dataframe
 add_SNP_stats <- function(QTL_df,SNP_stats_df,merge_column){
@@ -276,7 +280,185 @@ compare_MAFs_eQTL_veQTL <- function(eQTL_datasets, veQTL_datasets, MAF_df) {
   return(results)
 }
 
-########################### Regulatory elements #############################
+
+########################### Allele age ################################
+# Used in all three 6_Investigating_eQTL_and_veQTL_AlleleAge.R scripts
+
+# Fraction of SNPs where the derived allele increased transcript level or variability
+Fraction_Derived_Increased <- function(QTL_df, SNP_ages_df, slope_allele_column, slope_column) {
+  # Create unified SNP ID in SNP ages dataframe
+  SNP_ages_df$SNP <- paste0(SNP_ages_df$arm, SNP_ages_df$snp_pos)
+  
+  # Merge with QTL data by SNP
+  QTL_df <- merge(QTL_df, SNP_ages_df, by = "SNP", all = TRUE)
+  
+  # Define relevant columns
+  alt_col <- slope_allele_column
+  slope <- slope_column
+  
+  # Keep necessary columns only
+  QTL_df <- QTL_df[, c("SNP", "ANC", alt_col, slope)]
+  
+  # Remove rows without ancestral allele assignment
+  QTL_df <- QTL_df[!is.na(QTL_df[["ANC"]]), ]
+  
+  # Direction of effect with respect to derived allele
+  QTL_df$DER_Direction <- ifelse(QTL_df[["ANC"]] != QTL_df[[alt_col]], 
+                                 QTL_df[[slope]], 
+                                 -QTL_df[[slope]])
+  
+  # Determine if derived allele increases trait
+  QTL_df$Derived_Increased <- ifelse(QTL_df$DER_Direction > 0, 
+                                     "Derived_Increased", 
+                                     "Derived_Decreased")
+  
+  # Tabulate and compute percentage
+  freq_table <- table(QTL_df$Derived_Increased)
+  percentage_table <- (freq_table / sum(freq_table)) * 100
+  
+  # Ensure 0% is returned if no "Derived_Increased" is present
+  return(if ("Derived_Increased" %in% names(percentage_table)) {
+    percentage_table[["Derived_Increased"]]
+  } else {
+    message("Not a single slope in the dataframe is positive. Setting output to 0")
+    0
+  })
+}
+
+# Get SNP-specific FDI
+get_SNP_specific_FDI <- function(QTL_df, SNP_ages_df, slope_allele_column, slope_column) {
+  # Convert to data.table
+  QTL <- as.data.table(QTL_df)
+  SNP_ages <- as.data.table(SNP_ages_df)
+  
+  # Create SNP ID in SNP_ages_df
+  SNP_ages[, SNP := paste0(arm, snp_pos)]
+  
+  # Merge to get ancestral state
+  merged <- merge(QTL, SNP_ages[, .(SNP, ANC)], by = "SNP", all.x = TRUE)
+  
+  # Remove rows with missing ancestral state
+  merged <- merged[!is.na(ANC)]
+  
+  # Calculate direction with respect to derived allele
+  merged[, derived_direction := ifelse(get(slope_allele_column) != ANC, 
+                                       get(slope_column), 
+                                       -get(slope_column))]
+  
+  # Indicator for derived allele increasing the trait
+  merged[, derived_increased := as.integer(derived_direction > 0)]
+  
+  # Summarise: number of genes and fraction derived increased (FDI)
+  result <- merged[, .(
+    Number_of_vGenes = .N,
+    FDI = mean(derived_increased)
+  ), by = SNP]
+  
+  return(result[])
+}
+
+# Turn the SNP rownames into a column
+SNP_rownames_rename_MAF_DAF <- function(df) {
+  df %>%
+    tibble::rownames_to_column(var = "SNP") %>%
+    dplyr::rename(
+      MAF = dplyr::all_of(names(.)[2]),
+      DAF = dplyr::all_of(names(.)[3])
+    )
+}
+
+# Helper: subsample SNPs given MAF criteria
+subsample_snps <- function(snp_df, criteria) {
+  do.call(rbind, lapply(1:nrow(criteria), function(i) {
+    crit <- criteria[i, ]
+    eligible <- snp_df %>% filter(MAF >= crit$Min, MAF < crit$Max)
+    if (nrow(eligible) < crit$NumSNPstoSample) {
+      stop(paste("Not enough SNPs in range for quintile", crit$Quintile))
+    }
+    eligible %>% slice_sample(n = crit$NumSNPstoSample)
+  }))
+}
+
+# Compute one replicate: skew, median, KS p-value (shared subsampling)
+compute_skew_median_once <- function(qtl_df, nonqtl_df, criteria, ctrl_fixed_qtl = FALSE, qtl_fixed_daf = NULL) {
+  # If ctrl_fixed_qtl is TRUE, qtl_df won't be subsampled; qtl_fixed_daf must be provided (vector)
+  if (ctrl_fixed_qtl) {
+    qtl_sub_daf <- qtl_fixed_daf
+  } else {
+    qtl_sub <- subsample_snps(qtl_df, criteria)
+    qtl_sub_daf <- qtl_sub$DAF
+  }
+  nonqtl_sub <- subsample_snps(nonqtl_df, criteria)
+  nonqtl_sub_daf <- nonqtl_sub$DAF
+  
+  # compute skew and median
+  skew_qtl <- skewness(qtl_sub_daf, na.rm = TRUE)
+  skew_nonqtl <- skewness(nonqtl_sub_daf, na.rm = TRUE)
+  median_qtl <- median(qtl_sub_daf, na.rm = TRUE)
+  median_nonqtl <- median(nonqtl_sub_daf, na.rm = TRUE)
+  
+  # KS test (safe with tryCatch)
+  ks_p <- tryCatch(ks.test(qtl_sub_daf, nonqtl_sub_daf)$p.value, error = function(e) NA)
+  
+  data.frame(
+    skew_qtl = skew_qtl,
+    skew_nonqtl = skew_nonqtl,
+    median_qtl = median_qtl,
+    median_nonqtl = median_nonqtl,
+    ks_pvalue = ks_p
+  )
+}
+
+# Replicate wrapper (shared subsampling)
+sample_skew_median_replicates <- function(qtl_df, nonqtl_df, criteria, nrep = 1000, ctrl_fixed_qtl = FALSE, qtl_fixed_daf = NULL) {
+  bind_rows(lapply(1:nrep, function(r) {
+    set.seed(r)
+    compute_skew_median_once(qtl_df, nonqtl_df, criteria, ctrl_fixed_qtl, qtl_fixed_daf)
+  }))
+}
+
+# Plot combined DAF distributions (3 reps)
+plot_combined_daf <- function(qtl_df, nonqtl_df, criteria, cat, nrep = 3, ctrl_fixed_qtl = FALSE, qtl_fixed_daf = NULL) {
+  for (r in 1:nrep) {
+    set.seed(r)
+    if (ctrl_fixed_qtl) {
+      # use the fixed qtl_daf vector as-is; wrap into a data.frame for plotting
+      qtl_sub <- data.frame(DAF = qtl_fixed_daf, Type = "QTL")
+    } else {
+      qtl_sub <- subsample_snps(qtl_df, criteria) %>% mutate(Type = "QTL")
+    }
+    nonqtl_sub <- subsample_snps(nonqtl_df, criteria) %>% mutate(Type = "nonQTL")
+    subsample_all <- bind_rows(qtl_sub, nonqtl_sub)
+    
+    p_combined <- ggplot(subsample_all, aes(x = DAF, fill = Type)) +
+      geom_histogram(position = "identity", alpha = 0.5, bins = 10) +
+      theme_classic() +
+      scale_fill_manual(values = c("QTL" = "skyblue", "nonQTL" = "orange")) +
+      labs(x = "DAF", y = "Count", title = paste("QTL vs non-QTL - Rep", r))
+    
+    ggsave(filename = paste0(cat, "_rep", r, "_Combined_DAF_Distribution.svg"),
+           plot = p_combined, width = 4, height = 3, dpi = 300)
+  }
+}
+
+# Plot non-QTL only (used when QTL fixed / cannot be subsampled)
+plot_nonqtl_daf <- function(snp_df, criteria, cat, nrep = 3) {
+  for (r in 1:nrep) {
+    set.seed(r)
+    subsample <- subsample_snps(snp_df, criteria)
+    p <- ggplot(subsample, aes(x = DAF)) +
+      geom_histogram(bins = 10, fill = "skyblue") +
+      theme_classic() +
+      labs(x = "DAF", y = "Count", title = paste("non-QTL SNPs - Rep", r))
+    
+    ggsave(filename = paste0(cat, "_rep", r, "_nonQTL_DAF_Distribution.svg"),
+           plot = p, width = 3, height = 3, dpi = 300)
+  }
+}
+
+
+########################### Regulatory genomic elements #############################
+# Used in 7b_Regulatory_Feature_Enrichments.R
 
 # Function to process all the scEnhancer text files within a directory
 # into one dataframe with the relevant columns for downstream analysis
@@ -672,9 +854,6 @@ process_snp_sets <- function(snp_sets, analysis_functions) {
   ))
 }
 
-
-###################### SNP features enrichments using chi-square tests for multiple SNP sets ##############
-
 # Functions to calculate how many yes and nos, as well as the ratio of yes to nos
 get_counts <- function(df, type_col) {
   # Ensure the table includes both "yes" and "no" categories
@@ -713,106 +892,4 @@ create_contingency_table <- function(condition_SNPs, all_df, type_col) {
 perform_chi_square_test <- function(contingency_table) {
   test_result <- chisq.test(contingency_table)
   return(test_result)
-}
-
-
-########################### Allele age #########################
-
-# Fraction of SNPs where the derived allele increased transcript level or variability
-Fraction_Derived_Increased <- function(QTL_df, SNP_ages_df, slope_allele_column, slope_column) {
-  # Create unified SNP ID in SNP ages dataframe
-  SNP_ages_df$SNP <- paste0(SNP_ages_df$arm, SNP_ages_df$snp_pos)
-  
-  # Merge with QTL data by SNP
-  QTL_df <- merge(QTL_df, SNP_ages_df, by = "SNP", all = TRUE)
-  
-  # Define relevant columns
-  alt_col <- slope_allele_column
-  slope <- slope_column
-  
-  # Keep necessary columns only
-  QTL_df <- QTL_df[, c("SNP", "ANC", alt_col, slope)]
-  
-  # Remove rows without ancestral allele assignment
-  QTL_df <- QTL_df[!is.na(QTL_df[["ANC"]]), ]
-  
-  # Direction of effect with respect to derived allele
-  QTL_df$DER_Direction <- ifelse(QTL_df[["ANC"]] != QTL_df[[alt_col]], 
-                                 QTL_df[[slope]], 
-                                 -QTL_df[[slope]])
-  
-  # Determine if derived allele increases trait
-  QTL_df$Derived_Increased <- ifelse(QTL_df$DER_Direction > 0, 
-                                     "Derived_Increased", 
-                                     "Derived_Decreased")
-  
-  # Tabulate and compute percentage
-  freq_table <- table(QTL_df$Derived_Increased)
-  percentage_table <- (freq_table / sum(freq_table)) * 100
-  
-  # Ensure 0% is returned if no "Derived_Increased" is present
-  return(if ("Derived_Increased" %in% names(percentage_table)) {
-    percentage_table[["Derived_Increased"]]
-  } else {
-    message("Not a single slope in the dataframe is positive. Setting output to 0")
-    0
-  })
-}
-
-# Get SNP-specific FDI
-get_SNP_specific_FDI <- function(QTL_df, SNP_ages_df, slope_allele_column, slope_column) {
-  # Convert to data.table
-  QTL <- as.data.table(QTL_df)
-  SNP_ages <- as.data.table(SNP_ages_df)
-  
-  # Create SNP ID in SNP_ages_df
-  SNP_ages[, SNP := paste0(arm, snp_pos)]
-  
-  # Merge to get ancestral state
-  merged <- merge(QTL, SNP_ages[, .(SNP, ANC)], by = "SNP", all.x = TRUE)
-  
-  # Remove rows with missing ancestral state
-  merged <- merged[!is.na(ANC)]
-  
-  # Calculate direction with respect to derived allele
-  merged[, derived_direction := ifelse(get(slope_allele_column) != ANC, 
-                                       get(slope_column), 
-                                       -get(slope_column))]
-  
-  # Indicator for derived allele increasing the trait
-  merged[, derived_increased := as.integer(derived_direction > 0)]
-  
-  # Summarise: number of genes and fraction derived increased (FDI)
-  result <- merged[, .(
-    Number_of_vGenes = .N,
-    FDI = mean(derived_increased)
-  ), by = SNP]
-  
-  return(result[])
-}
-
-# Get SNP-specific FMI
-get_SNP_specific_FMI_HS <- function(QTL_df, Minor_allele_df, slope_allele_column, slope_column) {
-  # Convert to data.table
-  QTL <- as.data.table(QTL_df)
-  SNP_minor_allele <- as.data.table(Minor_allele_df)
-
-  # Merge to get minor allele 
-  merged <- merge(QTL, SNP_minor_allele[, c("SNP","HS_minor_allele")], by = "SNP", all.x = TRUE)
-  
-  # Calculate direction with respect to minor allele
-  merged[, minor_direction := ifelse(get(slope_allele_column) == HS_minor_allele, 
-                                       get(slope_column), 
-                                       -get(slope_column))]
-  
-  # Indicator for minor allele increasing the trait
-  merged[, minor_increased := as.integer(minor_direction > 0)]
-  
-  # Summarise: number of genes and fraction minor increased (FMI)
-  result <- merged[, .(
-    Number_of_vGenes = .N,
-    FMI = mean(minor_increased)
-  ), by = SNP]
-  
-  return(result[])
 }
