@@ -2,7 +2,7 @@
 # Part 3: Null distribution generation for derived allele frequencies of different categories
 # Gets the median DAF and skewness of each distribution 
 
-# Last Updated: 11/9/25
+# Last Updated: 9/4/26
 
 #################################
 ##### Packages and Setup ########
@@ -16,9 +16,11 @@ library(moments)
 
 # Continues with objects saved in the following .RData files
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
-load(file='5_Investigating_eQTL_and_veQTL.RData')
-load(file='6_Investigating_eQTL_and_veQTL_Allele_Age1.RData')
 load(file='6_Investigating_eQTL_and_veQTL_Allele_Age2.RData')
+
+# Call QTL functions again
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Code")
+source('QTL_Analysis_Functions.R') 
 
 ######################################################
 # (6) Figuring out the random expectation for DAFs ###
@@ -54,10 +56,10 @@ for (quintile in 1:5){
 # What dataframes are necessary
 HS_tv_DI_MAF_Criteria <- HS_trans_veQTL_der_inc_MAF_Criteria # Criteria 1 
 HS_tv_DD_MAF_Criteria <- HS_trans_veQTL_der_dec_MAF_Criteria # Criteria 2
-HS_tv_DI_df <- make_SNP_MAF_DAF_df(MAF_DAF[HS_trans_veQTL_der_inc$SNP,c('HS_MAF','HS_DAF')]) # Subsample der_inc
-HS_tv_DD_df <- make_SNP_MAF_DAF_df(MAF_DAF[HS_trans_veQTL_der_dec$SNP,c('HS_MAF','HS_DAF')]) # Subsample der_dec
-HS_tv_DI_non_df <- make_SNP_MAF_DAF_df(MAF_DAF[non_HS_veQTL_aged,c('HS_MAF','HS_DAF')]) # Subsample non-veQTL
-HS_tv_DD_non_df <- make_SNP_MAF_DAF_df(MAF_DAF[non_HS_veQTL_aged,c('HS_MAF','HS_DAF')]) # Subsample non-veQTL
+HS_tv_DI_df <- SNP_rownames_to_column(MAF_DAF[HS_trans_veQTL_der_inc$SNP,c('HS_MAF','HS_DAF')])
+HS_tv_DD_df <- SNP_rownames_to_column(MAF_DAF[HS_trans_veQTL_der_dec$SNP,c('HS_MAF','HS_DAF')])
+HS_tv_DI_non_df <- SNP_rownames_to_column(MAF_DAF[non_HS_veQTL_aged,c('HS_MAF','HS_DAF')])
+HS_tv_DD_non_df <- SNP_rownames_to_column(MAF_DAF[non_HS_veQTL_aged,c('HS_MAF','HS_DAF')])
 # Sufficient information for downsampling and estimation of average DAF...
 
 # HS trans-e
@@ -85,10 +87,10 @@ for (quintile in 1:5){
 # What dataframes are necessary
 HS_te_DI_MAF_Criteria <- HS_trans_eQTL_der_inc_MAF_Criteria # Criteria 1 
 HS_te_DD_MAF_Criteria <- HS_trans_eQTL_der_dec_MAF_Criteria # Criteria 2
-HS_te_DI_df <- make_SNP_MAF_DAF_df(MAF_DAF[HS_trans_eQTL_der_inc$SNP,c('HS_MAF','HS_DAF')]) # Subsample der_inc
-HS_te_DD_df <- make_SNP_MAF_DAF_df(MAF_DAF[HS_trans_eQTL_der_dec$SNP,c('HS_MAF','HS_DAF')]) # Subsample der_dec
-HS_te_DI_non_df <- make_SNP_MAF_DAF_df(MAF_DAF[non_HS_trans_eQTL_by_MAF$SNP,c('HS_MAF','HS_DAF')]) # Subsample non-eQTL
-HS_te_DD_non_df <- make_SNP_MAF_DAF_df(MAF_DAF[non_HS_trans_eQTL_by_MAF$SNP,c('HS_MAF','HS_DAF')]) # Subsample non-eQTL
+HS_te_DI_df <- SNP_rownames_to_column(MAF_DAF[HS_trans_eQTL_der_inc$SNP,c('HS_MAF','HS_DAF')])
+HS_te_DD_df <- SNP_rownames_to_column(MAF_DAF[HS_trans_eQTL_der_dec$SNP,c('HS_MAF','HS_DAF')]) 
+HS_te_DI_non_df <- SNP_rownames_to_column(MAF_DAF[non_HS_trans_eQTL_by_MAF$SNP,c('HS_MAF','HS_DAF')]) 
+HS_te_DD_non_df <- SNP_rownames_to_column(MAF_DAF[non_HS_trans_eQTL_by_MAF$SNP,c('HS_MAF','HS_DAF')]) 
 # Sufficient information for downsampling and estimation of aerage DAF...
 
 # Ctrl trans-v 
@@ -116,10 +118,10 @@ for (quintile in 1:5){
 # What dataframes are necessary
 Ctrl_tv_DI_MAF_Criteria <- Ctrl_trans_veQTL_der_inc_MAF_Criteria # Criteria 1 
 Ctrl_tv_DD_MAF_Criteria <- Ctrl_trans_veQTL_der_dec_MAF_Criteria # Criteria 2
-Ctrl_tv_DI_df <- make_SNP_MAF_DAF_df(MAF_DAF[Ctrl_trans_veQTL_der_inc$SNP,c('Ctrl_MAF','Ctrl_DAF')]) # Subsample der_inc
-Ctrl_tv_DD_df <- make_SNP_MAF_DAF_df(MAF_DAF[Ctrl_trans_veQTL_der_dec$SNP,c('Ctrl_MAF','Ctrl_DAF')]) # Subsample der_dec
-Ctrl_tv_DI_non_df <- make_SNP_MAF_DAF_df(MAF_DAF[non_Ctrl_veQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) # Subsample non-veQTL
-Ctrl_tv_DD_non_df <- make_SNP_MAF_DAF_df(MAF_DAF[non_Ctrl_veQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) # Subsample non-veQTL
+Ctrl_tv_DI_df <- SNP_rownames_to_column(MAF_DAF[Ctrl_trans_veQTL_der_inc$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_tv_DD_df <- SNP_rownames_to_column(MAF_DAF[Ctrl_trans_veQTL_der_dec$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_tv_DI_non_df <- SNP_rownames_to_column(MAF_DAF[non_Ctrl_veQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_tv_DD_non_df <- SNP_rownames_to_column(MAF_DAF[non_Ctrl_veQTL_aged,c('Ctrl_MAF','Ctrl_DAF')]) 
 # Sufficient information for downsampling and estimation of average DAF...
 # Remove sampling from table step
 # Sample rows 1000 times and compute average DAF per sample
@@ -150,10 +152,10 @@ for (quintile in 1:5){
 # What dataframes are necessary
 Ctrl_te_DI_MAF_Criteria <- Ctrl_trans_eQTL_der_inc_MAF_Criteria # Criteria 1 
 Ctrl_te_DD_MAF_Criteria <- Ctrl_trans_eQTL_der_dec_MAF_Criteria # Criteria 2
-Ctrl_te_DI_df <- make_SNP_MAF_DAF_df(MAF_DAF[Ctrl_trans_eQTL_der_inc$SNP,c('Ctrl_MAF','Ctrl_DAF')]) # Subsample der_inc
-Ctrl_te_DD_df <- make_SNP_MAF_DAF_df(MAF_DAF[Ctrl_trans_eQTL_der_dec$SNP,c('Ctrl_MAF','Ctrl_DAF')]) # Subsample der_dec
-Ctrl_te_DI_non_df <- make_SNP_MAF_DAF_df(MAF_DAF[non_Ctrl_trans_eQTL_by_MAF$SNP,c('Ctrl_MAF','Ctrl_DAF')]) # Subsample non-eQTL
-Ctrl_te_DD_non_df <- make_SNP_MAF_DAF_df(MAF_DAF[non_Ctrl_trans_eQTL_by_MAF$SNP,c('Ctrl_MAF','Ctrl_DAF')]) # Subsample non-eQTL
+Ctrl_te_DI_df <- SNP_rownames_to_column(MAF_DAF[Ctrl_trans_eQTL_der_inc$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_te_DD_df <- SNP_rownames_to_column(MAF_DAF[Ctrl_trans_eQTL_der_dec$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_te_DI_non_df <- SNP_rownames_to_column(MAF_DAF[non_Ctrl_trans_eQTL_by_MAF$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
+Ctrl_te_DD_non_df <- SNP_rownames_to_column(MAF_DAF[non_Ctrl_trans_eQTL_by_MAF$SNP,c('Ctrl_MAF','Ctrl_DAF')]) 
 # Sufficient information for downsampling and estimation of average DAF...
 # Remove sampling from table step
 # Sample rows 1000 times and compute aerage DAF per sample
@@ -196,108 +198,6 @@ write.table(HS_te_DD_non_df,'HS_te_DD_non_downsubsample_SNPs.txt',row.names = F,
 
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\DAF_downsampling")
 
-#------------------------------------------------------------
-# Helper: subsample SNPs given MAF criteria
-#------------------------------------------------------------
-subsample_snps <- function(snp_df, criteria) {
-  do.call(rbind, lapply(1:nrow(criteria), function(i) {
-    crit <- criteria[i, ]
-    eligible <- snp_df %>% filter(MAF >= crit$Min, MAF < crit$Max)
-    if (nrow(eligible) < crit$NumSNPstoSample) {
-      stop(paste("Not enough SNPs in range for quintile", crit$Quintile))
-    }
-    eligible %>% slice_sample(n = crit$NumSNPstoSample)
-  }))
-}
-
-#------------------------------------------------------------
-# Compute one replicate: skew, median, KS p-value (shared subsampling)
-#------------------------------------------------------------
-compute_skew_median_once <- function(qtl_df, nonqtl_df, criteria, ctrl_fixed_qtl = FALSE, qtl_fixed_daf = NULL) {
-  # If ctrl_fixed_qtl is TRUE, qtl_df won't be subsampled; qtl_fixed_daf must be provided (vector)
-  if (ctrl_fixed_qtl) {
-    qtl_sub_daf <- qtl_fixed_daf
-  } else {
-    qtl_sub <- subsample_snps(qtl_df, criteria)
-    qtl_sub_daf <- qtl_sub$DAF
-  }
-  nonqtl_sub <- subsample_snps(nonqtl_df, criteria)
-  nonqtl_sub_daf <- nonqtl_sub$DAF
-  
-  # compute skew and median
-  skew_qtl <- skewness(qtl_sub_daf, na.rm = TRUE)
-  skew_nonqtl <- skewness(nonqtl_sub_daf, na.rm = TRUE)
-  median_qtl <- median(qtl_sub_daf, na.rm = TRUE)
-  median_nonqtl <- median(nonqtl_sub_daf, na.rm = TRUE)
-  
-  # KS test (safe with tryCatch)
-  ks_p <- tryCatch(ks.test(qtl_sub_daf, nonqtl_sub_daf)$p.value, error = function(e) NA)
-  
-  data.frame(
-    skew_qtl = skew_qtl,
-    skew_nonqtl = skew_nonqtl,
-    median_qtl = median_qtl,
-    median_nonqtl = median_nonqtl,
-    ks_pvalue = ks_p
-  )
-}
-
-#------------------------------------------------------------
-# Replicate wrapper (shared subsampling)
-#------------------------------------------------------------
-sample_skew_median_replicates <- function(qtl_df, nonqtl_df, criteria, nrep = 1000, ctrl_fixed_qtl = FALSE, qtl_fixed_daf = NULL) {
-  bind_rows(lapply(1:nrep, function(r) {
-    set.seed(r)
-    compute_skew_median_once(qtl_df, nonqtl_df, criteria, ctrl_fixed_qtl, qtl_fixed_daf)
-  }))
-}
-
-#------------------------------------------------------------
-# Plot combined DAF distributions (3 reps)
-#------------------------------------------------------------
-plot_combined_daf <- function(qtl_df, nonqtl_df, criteria, cat, nrep = 3, ctrl_fixed_qtl = FALSE, qtl_fixed_daf = NULL) {
-  for (r in 1:nrep) {
-    set.seed(r)
-    if (ctrl_fixed_qtl) {
-      # use the fixed qtl_daf vector as-is; wrap into a data.frame for plotting
-      qtl_sub <- data.frame(DAF = qtl_fixed_daf, Type = "QTL")
-    } else {
-      qtl_sub <- subsample_snps(qtl_df, criteria) %>% mutate(Type = "QTL")
-    }
-    nonqtl_sub <- subsample_snps(nonqtl_df, criteria) %>% mutate(Type = "nonQTL")
-    subsample_all <- bind_rows(qtl_sub, nonqtl_sub)
-    
-    p_combined <- ggplot(subsample_all, aes(x = DAF, fill = Type)) +
-      geom_histogram(position = "identity", alpha = 0.5, bins = 10) +
-      theme_classic() +
-      scale_fill_manual(values = c("QTL" = "skyblue", "nonQTL" = "orange")) +
-      labs(x = "DAF", y = "Count", title = paste("QTL vs non-QTL - Rep", r))
-    
-    ggsave(filename = paste0(cat, "_rep", r, "_Combined_DAF_Distribution.svg"),
-           plot = p_combined, width = 4, height = 3, dpi = 300)
-  }
-}
-
-#------------------------------------------------------------
-# Plot non-QTL only (used when QTL fixed / cannot be subsampled)
-#------------------------------------------------------------
-plot_nonqtl_daf <- function(snp_df, criteria, cat, nrep = 3) {
-  for (r in 1:nrep) {
-    set.seed(r)
-    subsample <- subsample_snps(snp_df, criteria)
-    p <- ggplot(subsample, aes(x = DAF)) +
-      geom_histogram(bins = 10, fill = "skyblue") +
-      theme_classic() +
-      labs(x = "DAF", y = "Count", title = paste("non-QTL SNPs - Rep", r))
-    
-    ggsave(filename = paste0(cat, "_rep", r, "_nonQTL_DAF_Distribution.svg"),
-           plot = p, width = 3, height = 3, dpi = 300)
-  }
-}
-
-#------------------------------------------------------------
-# Main loop
-#------------------------------------------------------------
 categories <- c("HS_te_DI", "HS_te_DD", 
                 "Ctrl_te_DI", "Ctrl_te_DD",
                 "HS_tv_DI", "HS_tv_DD",
@@ -384,3 +284,4 @@ for (cat in categories) {
 
 # Save combined summary table
 write.table(summary_table, "DAF_Downsampling_Combined_Summary_Stats.txt", sep = "\t", quote = FALSE, row.names = FALSE)
+

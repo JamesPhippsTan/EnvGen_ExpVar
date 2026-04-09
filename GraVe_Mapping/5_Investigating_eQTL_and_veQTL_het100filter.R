@@ -1,7 +1,7 @@
 # Investigating eQTL and veQTL
 # Add a post-hoc filter for heterozygotes = 100
 
-# Last Updated: 4/11/25
+# Last Updated: 7/4/2026
 
 #################################
 ##### Packages and Setup ########
@@ -42,10 +42,28 @@ source('QTL_Analysis_Functions.R')
 
 # Load veQTL result files
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
-Ctrl_cis_veQTL <- read.table("Ctrl_cis_veQTL.txt", header = T,skipNul = T)
-Ctrl_trans_veQTL <- read.table("Ctrl_trans_veQTL.0_0005.pval.txt", header = T,skipNul = T)
-HS_cis_veQTL <- read.table("HS_cis_veQTL.txt", header = T,skipNul = T)
-HS_trans_veQTL <- read.table("HS_trans_veQTL.0_0005.pval.txt", header = T,skipNul = T)
+# Cis-veQTL - all genes have been remapped
+Ctrl_cis_veQTL <- read.table("Ctrl_cis_veQTL_remap.txt", header = T,skipNul = T)
+HS_cis_veQTL <- read.table("HS_cis_veQTL_remap.txt", header = T,skipNul = T)
+# Trans-veQTL only some genes have been remapped
+# Remove them from the original p<0.0005 file using gene name exclusion
+# Insert the results of the remapping to replace them to create a final p<0.0005 file
+Ctrl_trans_veQTL_original <- read.table("Ctrl_trans_veQTL.0_0005.pval.txt", header = T,skipNul = T)
+HS_trans_veQTL_original <- read.table("HS_trans_veQTL.0_0005.pval.txt", header = T,skipNul = T)
+Ctrl_trans_veQTL_genes_to_remap <- read.table("Ctrl_trans_veQTL_genes_to_remap.txt",header=T)
+HS_trans_veQTL_genes_to_remap <- read.table("HS_trans_veQTL_genes_to_remap.txt",header=T)
+Ctrl_trans_veQTL_original_minus_remap <- Ctrl_trans_veQTL_original[!(Ctrl_trans_veQTL_original$GENE %in% Ctrl_trans_veQTL_genes_to_remap$x),]
+HS_trans_veQTL_original_minus_remap <- HS_trans_veQTL_original[!(HS_trans_veQTL_original$GENE %in% HS_trans_veQTL_genes_to_remap$x),]
+# If correct, subtracting the remapped and the not remapped from the full dataset should result in 0
+# Ctrl_trans_veQTL_original_remap <- Ctrl_trans_veQTL_original[Ctrl_trans_veQTL_original$GENE %in% Ctrl_trans_veQTL_genes_to_remap$x,]
+# HS_trans_veQTL_original_remap <- HS_trans_veQTL_original[HS_trans_veQTL_original$GENE %in% HS_trans_veQTL_genes_to_remap$x,]
+# nrow(Ctrl_trans_veQTL_original)-nrow(Ctrl_trans_veQTL_original_minus_remap)-nrow(Ctrl_trans_veQTL_original_remap)
+# nrow(HS_trans_veQTL_original)-nrow(HS_trans_veQTL_original_minus_remap)-nrow(HS_trans_veQTL_original_remap)
+# Correct...so now let's add the remapped genes to the original minus remapped
+Ctrl_trans_veQTL_remap <- read.table("Ctrl_trans_veQTL.0_0005.pval_remap.txt", header = T,skipNul = T)
+HS_trans_veQTL_remap <- read.table("HS_trans_veQTL.0_0005.pval_remap.txt", header = T,skipNul = T)
+Ctrl_trans_veQTL <- rbind(Ctrl_trans_veQTL_original_minus_remap,Ctrl_trans_veQTL_remap)
+HS_trans_veQTL <- rbind(HS_trans_veQTL_original_minus_remap,HS_trans_veQTL_remap)
 
 # Position file to re-map actual SNP names to trans-veQTL
 SNPs_dummy_positions <- read.table("SNPs_dummy_positions.txt")
@@ -91,9 +109,13 @@ View(SNP_allele_age)
 length(intersect(unique(SNP_allele_age$SNP),unique(SNPs_position_map$SNP)))
 # 121683
 
+# Significant eQTL numbers and GxE table - calculated in a previous script
+eQTL_GxE_table <- read.csv('GxE/eQTL_GxE_table.csv')
+
 # Whole-population mean and variability metrics to locate high-eQTL genes in the mean-variance plot
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\")
 All_genes <- read.csv("Gene_MeanVar_Table.csv",row.names = 1)
+
 
 #####################################
 ##### 1) Pre-processing #############
@@ -367,8 +389,8 @@ for (FDR in FDR_cutoffs) {
 
 # View and save final summary table for this
 View(veQTL_GxE_table)
-#setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\GxE")
-#write.csv(veQTL_GxE_table,'veQTL_GxE_table.csv')
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\GxE")
+write.csv(veQTL_GxE_table,'veQTL_GxE_table_het100.csv')
 
 # Turn it into a percentage
 veQTL_GxE_table_percent <- veQTL_GxE_table
@@ -380,7 +402,6 @@ veQTL_GxE_table_percent[4:6,5:7] <- veQTL_GxE_table[4:6,5:7]*100/(sum(veQTL_GxE_
 veQTL_GxE_table_percent[7:9,5:7] <- veQTL_GxE_table[7:9,5:7]*100/(sum(veQTL_GxE_table[9,5:7]))
 veQTL_GxE_table_percent[,2:7] <- round(veQTL_GxE_table_percent[,2:7],digits = 2)
 View(veQTL_GxE_table_percent)
-#write.csv(veQTL_GxE_table_percent,'veQTL_GxE_table_percent.csv')
 
 # Make a plot of the percentages
 veQTL_GxE_table_percent_separated <- veQTL_GxE_table_percent %>%
@@ -419,7 +440,6 @@ for (col_name in columns_to_plot) {
 
 # At Het = 100, still similar -> mostly HS-specific genes and SNPs
 
-
 #########################
 # (2) eGenes and vGenes #
 #########################
@@ -446,10 +466,25 @@ vGenes_HS <- c(cis_vGenes_HS,trans_vGenes_HS)
 # Create separate data frames for each category with pre-calculated overlaps
 # FDR>0.05 in one condition, FDR>0.1 in the other
 # Combined cis and trans
+veQTL_GxE_table_plot <- veQTL_GxE_table[veQTL_GxE_table$SharedCutoff %in% 'cisandtrans_FDR<0.1',]
+veQTL_GxE_table_plot_gene_values <- c((8763-veQTL_GxE_table_plot$GxE_Ctrl_genes- 
+                                         veQTL_GxE_table_plot$Shared_genes- 
+                                         veQTL_GxE_table_plot$GxE_HS_genes), 
+                                      veQTL_GxE_table_plot$GxE_Ctrl_genes, 
+                                      veQTL_GxE_table_plot$Shared_genes, 
+                                      veQTL_GxE_table_plot$GxE_HS_genes)
+# Read in the eQTL values, which have been computed in a previous script
+eQTL_GxE_table_plot <- eQTL_GxE_table[eQTL_GxE_table$SharedCutoff %in% 'cisandtrans_FDR<0.1',]
+eQTL_GxE_table_plot_gene_values <- c((8763-eQTL_GxE_table_plot$GxE_Ctrl_genes- 
+                                        eQTL_GxE_table_plot$Shared_genes- 
+                                        eQTL_GxE_table_plot$GxE_HS_genes), 
+                                     eQTL_GxE_table_plot$GxE_Ctrl_genes, 
+                                     eQTL_GxE_table_plot$Shared_genes, 
+                                     eQTL_GxE_table_plot$GxE_HS_genes)
 # Done for all eQTL and veQTL
 data_eQTL <- data.frame(
   Partition = c("No", "Ctrl only", "Ctrl and HS", "HS only"),
-  Value = c(8763-571-7531-50, 571, 7531, 50) 
+  Value = eQTL_GxE_table_plot_gene_values
 ) %>%
   mutate(
     Percent = Value / sum(Value),
@@ -458,7 +493,7 @@ data_eQTL <- data.frame(
 
 data_veQTL <- data.frame(
   Partition = c("No", "Ctrl only", "Ctrl and HS", "HS only"),
-  Value = c(8763-0-1230-6824, 0, 1230, 6824) 
+  Value = veQTL_GxE_table_plot_gene_values
 ) %>%
   mutate(
     Percent = Value / sum(Value),
@@ -488,7 +523,7 @@ veQTL_plot
 # Save plots
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Overlap_Ctrl_HS_eQTL_veQTL")
 # Number of eQTL and veQTL per gene (with at least 1 eQTL or veQTL)
-#ggsave(plot = eQTL_plot, filename='eGene_overlap_plot.svg', width = 3, height = 1.5, dpi = 300)
+ggsave(plot = eQTL_plot, filename='eGene_overlap_plot_het100.svg', width = 3, height =1.5, dpi = 300)
 ggsave(plot = veQTL_plot, filename='vGene_overlap_plot_het100.svg', width = 3, height =1.5, dpi = 300)
 
 #########################################################
@@ -533,117 +568,6 @@ View(QTL_number_per_gene_summary)
 # The median numbers fall within this range though the maximum numbers far surpass this
 
 
-###############################################################################################
-##### (2e) eQTL and veQTL number vs variability and mean rank in the whole transcriptome ######
-###############################################################################################
-
-All_genes <- rownames_to_column(All_genes,'gene_id')
-hotspot_genes_All_genes <- merge(QTL_number_per_gene_final,All_genes,all=T,by='gene_id')
-View(hotspot_genes_All_genes)
-
-# Make plots
-for (QTL_type in c("cis_eQTL_#","cis_veQTL_#","trans_eQTL_#","trans_veQTL_#")){
-  mean_plot_list <- list()
-  var_plot_list <- list()
-  for (condition in c("Ctrl","HS")){
-    
-    # Last, loop for each condition
-    var_category <- paste0(condition,"_VST_MAD")
-    mean_category <- paste0(condition,"_VST_Mean")
-    QTL_category <- paste0(condition,"_",QTL_type)
-    
-    # Omit 0s
-    df_subset <- hotspot_genes_All_genes %>%
-      dplyr::select(!!sym(var_category), !!sym(mean_category), !!sym(QTL_category)) %>%
-      dplyr::filter(if_all(everything(), ~ !is.na(.) & . != 0))
-    
-    # Do not omit 0s
-    df_subset <- hotspot_genes_All_genes %>%
-      dplyr::select(!!sym(var_category), !!sym(mean_category), !!sym(QTL_category))
-    
-    df_subset[[var_category]] <- as.numeric(df_subset[[var_category]])
-    df_subset[[mean_category]] <- as.numeric(df_subset[[mean_category]])
-    df_subset[[QTL_category]] <- as.numeric(df_subset[[QTL_category]])
-    
-    # Extract Spearman correlation coefficient and p-value
-    spearman_test <- cor.test(y=df_subset[[var_category]], x=df_subset[[QTL_category]], method = "spearman")
-    spearman_coef <- spearman_test$estimate
-    spearman_p_value <- spearman_test$p.value
-    spearman_test_result <- paste0("Spearman rho = ",format_statistic(spearman_coef),
-                                   " p = ",format_statistic(spearman_p_value),"\n",
-                                   "Number of genes = ",nrow(df_subset))
-    
-    # Repeat spearman for mean
-    mean_spearman_test <- cor.test(y=df_subset[[mean_category]], x=df_subset[[QTL_category]], method = "spearman")
-    mean_spearman_coef <- mean_spearman_test$estimate
-    mean_spearman_p_value <- mean_spearman_test$p.value
-    mean_spearman_test_result <-paste0("Spearman rho = ",format_statistic(mean_spearman_coef),
-                                       " p = ",format_statistic(mean_spearman_p_value),"\n",
-                                       "Number of genes = ",nrow(df_subset))
-    
-    # Prepare label text
-    Var_label <- paste0(condition," transcript level variability")
-    Mean_label <- paste0(condition," mean transcript level")
-    QTL_cat_cleaned <- gsub('_',' ',QTL_category)
-    QTL_cat_cleaned <- gsub('trans ','trans-',QTL_cat_cleaned)
-    QTL_cat_cleaned <- gsub('cis ','cis-',QTL_cat_cleaned)
-    x_label <- paste0('log (',QTL_cat_cleaned,' + 1)')
-    
-    # Plot
-    var_plot <- ggplot(df_subset, aes(y = !!sym(var_category), x = log(!!sym(QTL_category)+1))) +
-      geom_point(alpha=0.5,color='darkgrey') +
-      geom_smooth(method = "lm", col = "blue",linetype='dashed')+
-      annotate("text", y = max(df_subset[[var_category]]), x = max(log(1+df_subset[[QTL_category]])), label = spearman_test_result, size = 3, hjust = 1,vjust = 1)+
-      ylab(Var_label)+
-      xlab(x_label)+
-      theme(axis.title.x = element_text(size = 10),
-            axis.title.y = element_text(size = 10),
-            plot.title = element_text(size = 7.5))+
-      theme_classic()
-    
-    mean_plot <- ggplot(df_subset, aes(y = !!sym(mean_category), x = log(!!sym(QTL_category)+1))) +
-      geom_point(alpha=0.5,color='darkgrey') +
-      geom_smooth(method = "lm", col = "blue",linetype='dashed')+
-      annotate("text", y = max(df_subset[[mean_category]]), x = max(log(1+df_subset[[QTL_category]])), label = mean_spearman_test_result, size = 3, hjust = 1,vjust = 1)+
-      ylab(Mean_label)+
-      xlab(x_label)+
-      theme(axis.title.x = element_text(size = 10),
-            axis.title.y = element_text(size = 10),
-            plot.title = element_text(size = 7.5))+
-      theme_classic()
-    
-    mean_plot_list[[mean_category]] <- mean_plot
-    var_plot_list[[var_category]] <- var_plot
-  }
-  # Save the plots
-  setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\eQTL_veQTL_meanvar_plots")
-  mean_plots <- wrap_plots(mean_plot_list, nrow = 2)  # Arrange in 2 columns
-  print(mean_plots)
-  #ggsave(plot = mean_plots,filename = paste0("MeanCor_",QTL_category,"plot.svg"),width=3,height=6,dpi=300)
-  var_plots <- wrap_plots(var_plot_list, nrow = 2)  # Arrange in 2 columns
-  print(var_plots)
-  #ggsave(plot = var_plots,filename = paste0("VarCor_",QTL_category,"plot.svg"),width=3,height=6,dpi=300)
-}
-
-# cis-eQTL number
-# Voom - Small (in HS, insignificant) positive with variability and mean
-# VST - Larger positive with variability and small positive with mean
-
-# cis-veQTL number
-# Voom - Ctrl-cis: 3 high-variability genes
-# VST - Ctrl-cis: 2 high-variability and one super low-variability
-
-# trans-eQTL number
-# Voom - Small negative with variability and positive with mean
-# VST - Larger positive with variability and negative with mean
-
-# trans-veQTL number (comment on Ctrl_trans)
-# Voom - Positive with variability and negative with mean
-# VST - Weaker positive with variability and negative with mean
-
-# The cis- and trans- eQTL plots provide evidence that at least some of the high-mean high-variance genes in the VST plot are those with higher-than-normal numbers of eQTL
-# The trans-veQTL plots provide evidence that the number of trans-veQTL scales with the raw variance
-
 #######################
 # (3) eQTLs and vQTLs #
 #######################
@@ -669,10 +593,25 @@ eQTL_HS <- c(cis_eQTL_HS,trans_eQTL_HS)
 veQTL_Ctrl <- c(cis_veQTL_Ctrl,trans_veQTL_Ctrl)
 veQTL_HS <- c(cis_veQTL_HS,trans_veQTL_HS)
 
+# Obtain the veQTL values which have been computed here
+veQTL_GxE_table_plot_SNP_values <- c((383710-veQTL_GxE_table_plot$GxE_Ctrl_SNPs- 
+                                        veQTL_GxE_table_plot$Shared_SNPs- 
+                                        veQTL_GxE_table_plot$GxE_HS_SNPs), 
+                                     veQTL_GxE_table_plot$GxE_Ctrl_SNPs, 
+                                     veQTL_GxE_table_plot$Shared_SNPs, 
+                                     veQTL_GxE_table_plot$GxE_HS_SNPs)/1000
+# Read in the eQTL values, which have been computed in a previous script
+eQTL_GxE_table_plot_SNP_values <- c((383710-eQTL_GxE_table_plot$GxE_Ctrl_SNPs- 
+                                       eQTL_GxE_table_plot$Shared_SNPs- 
+                                       eQTL_GxE_table_plot$GxE_HS_SNPs), 
+                                    eQTL_GxE_table_plot$GxE_Ctrl_SNPs, 
+                                    eQTL_GxE_table_plot$Shared_SNPs, 
+                                    eQTL_GxE_table_plot$GxE_HS_SNPs)/1000
+
 # Horizontal barplot visualisation
 data_eQTL_SNPs <- data.frame(
   Partition = c("Non-eQTL", "Ctrl-only eQTL", "Ctrl and HS eQTL", "HS-only eQTL"),
-  Value = c(383.710-62.929-8.968-237.976, 62.929, 237.976,8.968) 
+  Value = eQTL_GxE_table_plot_SNP_values
 ) %>%
   mutate(
     Percent = Value / sum(Value),
@@ -681,7 +620,7 @@ data_eQTL_SNPs <- data.frame(
 
 data_veQTL_SNPs <- data.frame(
   Partition = c("Non-veQTL", "Ctrl-only veQTL", "Ctrl and HS veQTL", "HS-only veQTL"),
-  Value = c(383.710-0.063-1.848-88.119, 0.063, 1.848,88.119) 
+  Value = veQTL_GxE_table_plot_SNP_values
 ) %>%
   mutate(
     Percent = Value / sum(Value),
@@ -713,118 +652,10 @@ veQTL_SNP_plot
 # Save plots
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Overlap_Ctrl_HS_eQTL_veQTL")
 # Number of eQTL and veQTL per gene (with at least 1 eQTL or veQTL)
-#ggsave(plot = eQTL_SNP_plot, filename='eQTL_SNP_overlap_plot.svg', width = 3, height = 1.5, dpi = 300)
+ggsave(plot = eQTL_SNP_plot, filename='eQTL_SNP_overlap_plot_het100.svg', width = 3, height = 1.5, dpi = 300)
 ggsave(plot = veQTL_SNP_plot, filename='veQTL_SNP_overlap_plot_het100.svg', width = 3, height =1.5, dpi = 300)
 
 # Eliminates 5.5% of veQTL
-
-##############################################################################
-# (3b) How many genes per SNP? Are there hotspot SNPs that regulate many genes?
-##############################################################################
-
-# Get the number of hotspot QTL for each test within one table
-hotspot_SNPs <- merge(data.frame(table(Ctrl_cis_eqtl_sig$SNP)),data.frame(table(Ctrl_trans_eqtl_sig$SNP)),all = T,by='Var1')
-hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(HS_cis_eqtl_sig$SNP)),all = T,by='Var1')
-hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(HS_trans_eqtl_sig$SNP)),all = T,by='Var1')
-hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(Ctrl_cis_veQTL_sig$SNP)),all = T,by='Var1')
-hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(HS_cis_veQTL_sig$SNP)),all = T,by='Var1')
-hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(Ctrl_trans_veQTL_sig$SNP)),all = T,by='Var1')
-hotspot_SNPs <- merge(hotspot_SNPs,data.frame(table(HS_trans_veQTL_sig$SNP)),all = T,by='Var1')
-colnames(hotspot_SNPs) <- c('SNP','Ctrl_cis_eQTLs','Ctrl_trans_eQTLs','HS_cis_eQTLs','HS_trans_eQTLs','Ctrl_cis_veQTLs','HS_cis_veQTLs','Ctrl_trans_veQTLs','HS_trans_veQTLs')
-hotspot_SNPs_summary <- as.data.frame(t(sapply(hotspot_SNPs[,2:ncol(hotspot_SNPs)], summary_with_count)))
-View(hotspot_SNPs_summary)
-
-# What determines the number of genes per SNP? 
-HS_trans_veQTL_SNP_stats <- merge(hotspot_SNPs[,c('SNP','HS_trans_veQTLs')],HS_SNP_stats,by = 'SNP',all.x = )
-# MAF?
-ggplot(data=HS_trans_veQTL_SNP_stats,aes(x=MAF,y=log(HS_trans_veQTLs))) + geom_point()
-cor.test(HS_trans_veQTL_SNP_stats$MAF,HS_trans_veQTL_SNP_stats$HS_trans_veQTLs,method='spearman')
-# Tiny negative correlation
-ggplot(data=HS_trans_veQTL_SNP_stats,aes(x=`C(HET)`,y=log(HS_trans_veQTLs))) + geom_point()
-cor.test(HS_trans_veQTL_SNP_stats$`C(HET)`,HS_trans_veQTL_SNP_stats$HS_trans_veQTLs,method='spearman')
-# Larger negative correlation
-# How about the top 55...
-summary(subset(HS_trans_veQTL_SNP_stats,HS_trans_veQTLs>400)$`C(HET)`)
-# Median 125 at 200
-# Median 101 at 300
-# Median max 90 at 400, meaning the top 4 veQTL are low-confidence...
-# The 1011 one is a low confidence-SNP
-summary(subset(HS_trans_veQTL_SNP_stats,HS_trans_veQTLs>200)$`C(HET)`)
-
-
-# There have been no comparison of the number of genes sharing eQTL/veQTL in Huang et al., 2015
-# Save for the number of genetically-correlated transcripts based on MMC but not on eQTL/veQTL number
-# Thus, these are new results 
-# The strongest HS hotspot veQTL affects more genes than the strongest Ctrl veQTL
-# Plot the pleiotropy per eQTL and veQTL category 
-for (SNP_column in c('Ctrl_cis_eQTLs','Ctrl_trans_eQTLs','HS_cis_eQTLs','HS_trans_eQTLs')){
-  data <- data.frame(value = hotspot_SNPs[, SNP_column])
-  data <- na.omit(data)
-  binwidth <- ifelse(max(data)<10,1,
-                     (max(data$value) - min(data$value)) / max(data$value))  
-  eQTL_pleiotropy <- ggplot(data) +
-    geom_histogram(
-      aes(x = value),
-      binwidth = binwidth,
-      center = 0,
-      bins = 10,
-      position = "identity",
-      color = "black",
-      fill = "#4F8E4D"
-    ) +
-    theme_classic() +
-    labs(
-      title = gsub('s e','s-e',gsub('_',' ', SNP_column)),
-      subtitle = paste0(nrow(data),' SNPs'),
-      x = "# of regulated genes per SNP",
-      y = '# of SNPs (log scale)'
-    ) +
-    theme(
-      plot.title = element_text(face = "bold"),
-      legend.title = element_text(face = "bold")
-    )+
-    scale_y_continuous(
-      trans = pseudo_log_trans(base = 10),
-      breaks = c(0, 1, 10, 100, 1000, 10000)
-    )
-  setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Hotspot_SNPs")
-  #ggsave(plot = eQTL_pleiotropy,filename = paste0("SNP_pleiotropy,",SNP_column,"_plot.svg"),height=3,width=3,dpi=300)
-}
-
-# Plot the pleiotropy per eQTL and veQTL category 
-for (SNP_column in c('Ctrl_cis_veQTLs','Ctrl_trans_veQTLs','HS_cis_veQTLs','HS_trans_veQTLs')){
-  data <- data.frame(value = hotspot_SNPs[, SNP_column])
-  data <- na.omit(data)
-  binwidth <- ifelse(max(data)<10,1,
-                     (max(data$value) - min(data$value)) / max(data$value))
-  veQTL_pleiotropy <- ggplot(data) +
-    geom_histogram(
-      aes(x = value),
-      bins = 10,
-      binwidth = binwidth,
-      center = 0,
-      position = "identity",
-      color = "black",
-      fill= '#611BB8'
-    ) +
-    theme_classic() +
-    labs(
-      title = gsub('s ve','s-ve',gsub('_',' ', SNP_column)),
-      subtitle = paste0(nrow(data),' SNPs'),
-      x = "# of regulated genes per SNP",
-      y = "# of SNPs (log scale)"
-    ) +
-    theme(
-      plot.title = element_text(face = "bold"),
-      legend.title = element_text(face = "bold")
-    )+
-    scale_y_continuous(
-      trans = pseudo_log_trans(base = 10),
-      breaks = c(0, 1, 10, 100, 1000, 10000)
-    )
-  setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\Hotspot_SNPs")
-  #ggsave(plot = veQTL_pleiotropy,filename = paste0("SNP_pleiotropy,",SNP_column,"_plot.svg"),height=3,width=3,dpi=300)
-}
 
 ###############################################################################
 # (3c) Do the SNP sets have biases in minor allele frequency? eQTL vs veQTL ###

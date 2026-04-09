@@ -1,6 +1,6 @@
 # Investigating whether eQTL or veQTL are enriched in functional genomic regions
 
-# Last Updated: 10/9/25
+# Last Updated: 9/4/26
 
 #################################
 ##### Packages and Setup ########
@@ -81,7 +81,7 @@ HS_trans_veQTL <-extract_chromosome_and_pos(HS_trans_veQTL,input_col = 'SNP',kee
 
 # Load SNP effects - introns, exons, etc. 
 # These already have a per-SNP basis
-SNP_effects <- read.csv("SnpEff_Annotations_final.csv",header = T,row.names = 1)
+SNP_effects <- read.csv("SNPEff/SnpEff_Annotations_final.csv",header = T,row.names = 1)
 SNP_effects <- SNP_effects[SNPs_position_map$SNP,]
 SNP_effects <- rownames_to_column(SNP_effects,var = "SNP")
 names(SNP_effects) <- gsub("^X", "", names(SNP_effects))
@@ -390,5 +390,5 @@ write.csv(x = Feature_enrichment_table_T,file = 'Regulatory_feature_enrichment_t
 write.csv(x = Feature_enrichment_table_T_ObsExpRatio,file = 'ObsExpRatio_regulatory_feature_enrichment_table.csv')
 write.csv(x = Feature_enrichment_table_T_YesFraction,file = 'YesFraction_regulatory_feature_enrichment_table.csv')
 
-save.image(file='7_Regulatory_Feature_Enrichments.RData')
+save.image(file='7b_Regulatory_Feature_Enrichments.RData')
 

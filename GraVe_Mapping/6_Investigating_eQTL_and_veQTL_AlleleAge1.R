@@ -1,7 +1,7 @@
 # Investigating eQTL and veQTL - only the allele age component so I can run as a background job.
 # Part 1: Just the per-QTL FDI
 
-# Last Updated: 17/9/25
+# Last Updated: 9/4/26
 
 #################################
 ##### Packages and Setup ########
@@ -26,7 +26,7 @@ library(svglite)
 
 # Load saved script environment
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
- load(file='6_Investigating_eQTL_and_veQTL_Allele_Age1.RData')
+#load(file='6_Investigating_eQTL_and_veQTL_Allele_Age1.RData')
 
 # Functions
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Code")
@@ -41,7 +41,7 @@ source('QTL_Analysis_Functions.R')
 
 # Continues with objects saved in the following .RData file
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
-load(file='5_Investigating_eQTL_and_veQTL.RData')
+load(file='5_Investigating_eQTL_and_veQTL_remake.RData')
 
 #################################################################################################################
 # (1) Are older or newer alleles more likely to increase transcript level variability? eQTL and veQTL.... #######
@@ -57,11 +57,43 @@ load(file='5_Investigating_eQTL_and_veQTL.RData')
 # What are the names of the columns harbouring the SNPs? Which one to prioritize?
 # A1 and A2 - all dataframes; REF and ALT are also present veQTL mapping
 
+##########################################################################
+#  Add necessary missing columns to the existing significance dataframes #
+##########################################################################
+
+# Add SNP stats and info
+Ctrl_cis_eqtl_sig <- add_SNP_stats(Ctrl_cis_eqtl_sig,
+                                               SNP_stats_df = Ctrl_SNP_stats,
+                                               merge_column = 'variant_id') 
+HS_cis_eqtl_sig <- add_SNP_stats(HS_cis_eqtl_sig,
+                                             SNP_stats_df = HS_SNP_stats,
+                                             merge_column = 'variant_id')
+Ctrl_trans_eqtl_sig <- add_SNP_stats(Ctrl_trans_eqtl_sig,
+                                                 SNP_stats_df = Ctrl_SNP_stats,
+                                                 merge_column = 'variant_id') 
+HS_trans_eqtl_sig <- add_SNP_stats(HS_trans_eqtl_sig,
+                                               SNP_stats_df = HS_SNP_stats,
+                                               merge_column = 'variant_id') 
+
+Ctrl_cis_veQTL_sig <- add_SNP_stats(Ctrl_cis_veQTL_sig,
+                                                SNP_stats_df = Ctrl_SNP_stats,
+                                                merge_column = 'SNP') 
+HS_cis_veQTL_sig <- add_SNP_stats(HS_cis_veQTL_sig,
+                                              SNP_stats_df = HS_SNP_stats,
+                                              merge_column = 'SNP')
+Ctrl_trans_veQTL_sig <- add_SNP_stats(Ctrl_trans_veQTL_sig,
+                                                  SNP_stats_df = Ctrl_SNP_stats,
+                                                  merge_column = 'SNP') 
+HS_trans_veQTL_sig <- add_SNP_stats(HS_trans_veQTL_sig,
+                                                SNP_stats_df = HS_SNP_stats,
+                                                merge_column = 'SNP')
 
 #########
 #  eQTL #
 #########
 
+
+# Get the SNP-specific fraction derived increased
 Ctrl_cis_per_eQTL_FDI <- get_SNP_specific_FDI(QTL_df = Ctrl_cis_eqtl_sig,
                                               SNP_ages_df = SNP_allele_age,
                                               slope_allele_column = 'A2',

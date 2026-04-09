@@ -27,6 +27,7 @@ library(svglite)
 
 # Load saved script environment
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
+#load(file='5_Investigating_eQTL_and_veQTL.RData')
 
 # Functions
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Code")
@@ -380,7 +381,8 @@ veQTL_GxE_table_percent[firstrow:lastrow,5:7] <- veQTL_GxE_table[firstrow:lastro
 }
 veQTL_GxE_table_percent[,2:7] <- round(veQTL_GxE_table_percent[,2:7],digits = 2)
 View(veQTL_GxE_table_percent)
-#write.csv(veQTL_GxE_table_percent,'veQTL_GxE_table_percent.csv')
+write.csv(veQTL_GxE_table_percent,'veQTL_GxE_table_percent.csv')
+
 # Make a plot of the percentages
 veQTL_GxE_table_percent_separated <- veQTL_GxE_table_percent %>%
   separate(SharedCutoff, into = c("cis_or_trans", "shared_cutoff"), sep = "_")
@@ -466,7 +468,7 @@ data_eQTL <- data.frame(
 
 data_veQTL <- data.frame(
   Partition = c("No", "Ctrl only", "Ctrl and HS", "HS only"),
-  Value = eQTL_GxE_table_plot_gene_values
+  Value = veQTL_GxE_table_plot_gene_values
 ) %>%
   mutate(
     Percent = Value / sum(Value),
@@ -678,19 +680,19 @@ veQTL_Ctrl <- c(cis_veQTL_Ctrl,trans_veQTL_Ctrl)
 veQTL_HS <- c(cis_veQTL_HS,trans_veQTL_HS)
 
 # Obtain the veQTL values which have been computed here
-veQTL_GxE_table_plot_SNP_values <- c((383710-veQTL_GxE_table_plot$GxE_Ctrl_genes- 
-                                         veQTL_GxE_table_plot$Shared_genes- 
-                                         veQTL_GxE_table_plot$GxE_HS_genes), 
-                                      veQTL_GxE_table_plot$GxE_Ctrl_genes, 
-                                      veQTL_GxE_table_plot$Shared_genes, 
-                                      veQTL_GxE_table_plot$GxE_HS_genes)/1000
+veQTL_GxE_table_plot_SNP_values <- c((383710-veQTL_GxE_table_plot$GxE_Ctrl_SNPs- 
+                                         veQTL_GxE_table_plot$Shared_SNPs- 
+                                         veQTL_GxE_table_plot$GxE_HS_SNPs), 
+                                      veQTL_GxE_table_plot$GxE_Ctrl_SNPs, 
+                                      veQTL_GxE_table_plot$Shared_SNPs, 
+                                      veQTL_GxE_table_plot$GxE_HS_SNPs)/1000
 # Read in the eQTL values, which have been computed in a previous script
-eQTL_GxE_table_plot_SNP_values <- c((383710-eQTL_GxE_table_plot$GxE_Ctrl_genes- 
-                                        eQTL_GxE_table_plot$Shared_genes- 
-                                        eQTL_GxE_table_plot$GxE_HS_genes), 
-                                     eQTL_GxE_table_plot$GxE_Ctrl_genes, 
-                                     eQTL_GxE_table_plot$Shared_genes, 
-                                     eQTL_GxE_table_plot$GxE_HS_genes)
+eQTL_GxE_table_plot_SNP_values <- c((383710-eQTL_GxE_table_plot$GxE_Ctrl_SNPs- 
+                                        eQTL_GxE_table_plot$Shared_SNPs- 
+                                        eQTL_GxE_table_plot$GxE_HS_SNPs), 
+                                     eQTL_GxE_table_plot$GxE_Ctrl_SNPs, 
+                                     eQTL_GxE_table_plot$Shared_SNPs, 
+                                     eQTL_GxE_table_plot$GxE_HS_SNPs)/1000
 
 # Horizontal barplot visualisation
 data_eQTL_SNPs <- data.frame(
@@ -702,7 +704,6 @@ data_eQTL_SNPs <- data.frame(
     Partition = factor(Partition, levels = c("Ctrl and HS eQTL", "HS-only eQTL", "Ctrl-only eQTL", "Non-eQTL"))
   )
 
-Non_veQTL_SNPs = 383.710-GxE_Ctrl_SNPs/1000-Shared_SNPs/1000-GxE_HS_SNPs/1000
 data_veQTL_SNPs <- data.frame(
   Partition = c("Non-veQTL", "Ctrl-only veQTL", "Ctrl and HS veQTL", "HS-only veQTL"),
   Value = veQTL_GxE_table_plot_SNP_values
