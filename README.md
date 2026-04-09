@@ -1,4 +1,4 @@
-Contains R, bash, Python, and D scripts used to generate figures and tables within the manuscript 'Environmental perturbation increases gene expression variability and unmasks genetic regulation for transcriptional robustness' (https://www.biorxiv.org/content/10.64898/2026.02.18.706644v1.full). The starting datasets, as well as key datasets outputted across various stages of the analysis, can be found here (https://edmond.mpg.de/dataset.xhtml?persistentId=doi:10.17617/3.47SZWA).
+Contains R, python, and bash scripts utilised to generate the figures and tables within 'Environmental perturbation increases gene expression variability and unmasks genetic regulation for transcriptional robustness' (https://www.biorxiv.org/content/10.64898/2026.02.18.706644v1.full). It is split into the following subfolders:
 
 
 
@@ -19,4 +19,8 @@ pipelines - snakemake pipelines integrating analyses and codes in GraVe_Mapping 
 
 R scripts 0 until 6 - RNAseq data processing and quality checks (Figure 1 and supplement).
 
-_Functions.R - functions for specific types of analyses
+GraVe_Mapping - Gra(mmar) Ve(qtl) mappping in each diet (Figure 4 and supplement). Contains modified versions of tensorqtl python codes (substitute these files into an existing conda installation) and veqtl mapper D code (requires following https://funpopgen.github.io/veqtl-mapper/ to build from source but using the files here instead of those in the default git clone). Snakemake pipeline in progress for better flow and ease of reproducibility.
+
+FDI_cal - used to calculate the fraction (F) of derived (D) SNPs that increase (I) the metric of interest, either mean expression for eQTL or variability in expression for veQTL, and plot a distribution of this fraction for a defined set of SNPs. 
+
+pipelines - snakemake pipelines integrating analyses and codes in GraVe_Mapping and FDI_cal to allow (1) quicker reproducibility of the results in the manuscript and (2) adaptation to more complex experimental designs.  
