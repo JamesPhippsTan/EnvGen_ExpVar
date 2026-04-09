@@ -1,4 +1,4 @@
-Contains R, python, and bash scripts utilised to generate the figures and tables within 'Environmental perturbation increases gene expression variability and unmasks genetic regulation for transcriptional robustness' (https://www.biorxiv.org/content/10.64898/2026.02.18.706644v1.full). The starting datasets, as well as key datasets outputted across various stages of the analysis, can be found here (https://edmond.mpg.de/dataset.xhtml?persistentId=doi:10.17617/3.47SZWA).
+Contains R, bash, Python, and D scripts used to generate figures and tables within the manuscript 'Environmental perturbation increases gene expression variability and unmasks genetic regulation for transcriptional robustness' (https://www.biorxiv.org/content/10.64898/2026.02.18.706644v1.full). The starting datasets, as well as key datasets outputted across various stages of the analysis, can be found here (https://edmond.mpg.de/dataset.xhtml?persistentId=doi:10.17617/3.47SZWA).
 
 
 This code repository is split into the following folders and files:
