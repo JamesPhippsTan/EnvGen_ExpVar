@@ -1,9 +1,15 @@
 # Preparing eQTL to be regressed out of model to detect veQTL
-# Only 50 can be mapped at maximum
+# The idea is that some veQTL are caused by interacting eQTL variants having LD with a neighbouring eQTL
+# The way to address this is to regress the effect of the interacting eQTL variant
+# Only 50 can be mapped at maximum on our cluster...any more and issues arise
 
-# The idea is that some veQTL are caused by interacting variants having LD with a neighbouring eQTL
+# Note: big bug in the top_eQTL_list function discovered 
+# Set as decreasing = TRUE for the initial run 
+# The correct parameter is decreasing = FALSE
+# This has been corrected and the code has been rerun
 
-# Last Updated: 28/5/25
+
+# Last Updated: 27/3/26
 
 #################################
 ##### Packages and Setup ########
@@ -19,7 +25,7 @@ library(ggvenn)
 
 # Load saved script environment
 setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\GraVe_Mapping\\")
-load(file='4_eQTL_prep_for_veQTL.RData')
+load(file='4a_eQTL_prep_for_veQTL.RData')
 
 # Functions
 eQTL_number_per_gene <- function(gene_df){
@@ -132,14 +138,19 @@ Cols_needed <- c('phenotype_id','variant_id','p_final')
 Ctrl_cis_eQTL_by_gene <- split(Ctrl_cis_eqtl_sig_perm[,Cols_needed],f=Ctrl_cis_eqtl_sig_perm[,'phenotype_id'])
 HS_cis_eQTL_by_gene <- split(HS_cis_eqtl_sig_perm[,Cols_needed],f=HS_cis_eqtl_sig_perm[,'phenotype_id'])
 
-Ctrl_cis_eQTL_by_gene_number <- do.call(rbind,lapply(Ctrl_cis_eQTL_by_gene, nrow))
-View(Ctrl_cis_eQTL_by_gene_number) # ~19/700 below 50 cis-eQTL
-HS_cis_eQTL_by_gene_number <- do.call(rbind,lapply(HS_cis_eQTL_by_gene, nrow))
-View(HS_cis_eQTL_by_gene_number) # ~10/500 below 50 cis-eQTL
-
 # Retain only the top 50 lowest-pval cis-eQTL 
 Ctrl_top_cis_eQTL_list <- do.call(rbind,lapply(Ctrl_cis_eQTL_by_gene, top_eQTL_list,number=50))
 HS_top_cis_eQTL_list <- do.call(rbind,lapply(HS_cis_eQTL_by_gene, top_eQTL_list,number=50))
+# See below
+
+# Number of SNPs per gene - just to get an idea of the distribution of high-eQTL genes
+Ctrl_cis_eQTL_by_gene_number <- do.call(rbind,lapply(Ctrl_cis_eQTL_by_gene, nrow))
+View(Ctrl_cis_eQTL_by_gene_number) 
+# 29 genes below 50 cis-eQTL - 0.3% of all genes with expression
+HS_cis_eQTL_by_gene_number <- do.call(rbind,lapply(HS_cis_eQTL_by_gene, nrow))
+View(HS_cis_eQTL_by_gene_number) 
+# 17 genes below 50 cis-eQTL - 0.2% of all genes with expression
+# Imperfect eQTL accounting should not affect most of the transcriptome
 
 ############################
 ##### (2b) trans-veQTL #####
@@ -156,15 +167,19 @@ nrow(HS_eqtl_sig)
 Ctrl_eQTL_by_gene <- split(Ctrl_eqtl_sig,f=Ctrl_eqtl_sig[,'phenotype_id'])
 HS_eQTL_by_gene <- split(HS_eqtl_sig,f=HS_eqtl_sig[,'phenotype_id'])
 
-# Number of SNPs per gene - just to get an idea of the distribution of high-eQTL genes
-Ctrl_eQTL_by_gene_number <- do.call(rbind,lapply(Ctrl_eQTL_by_gene, nrow))
-View(Ctrl_eQTL_by_gene_number) # ~700/7000 below 50 cis and trans-eQTL
-HS_eQTL_by_gene_number <- do.call(rbind,lapply(HS_eQTL_by_gene, nrow))
-View(HS_eQTL_by_gene_number) # ~1000/5000 below 50 cis and trans-eQTL
-
 # Retain only the top 50 lowest-pval eQTL 
 Ctrl_top_eQTL_list <- do.call(rbind,lapply(Ctrl_eQTL_by_gene, top_eQTL_list,number=50))
 HS_top_eQTL_list <- do.call(rbind,lapply(HS_eQTL_by_gene, top_eQTL_list,number=50))
+# See below note
+
+# Number of SNPs per gene - just to get an idea of the distribution of high-eQTL genes
+Ctrl_eQTL_by_gene_number <- do.call(rbind,lapply(Ctrl_eQTL_by_gene, nrow))
+View(Ctrl_eQTL_by_gene_number)  
+# 1434 genes above 50 eQTL - 16% of all genes with expression
+HS_eQTL_by_gene_number <- do.call(rbind,lapply(HS_eQTL_by_gene, nrow))
+View(HS_eQTL_by_gene_number)  
+# 909 genes above 50 eQTL - 10% of all genes with expression
+# Imperfect eQTL accounting should not affect most of the transcriptome
 
 ###########################################################
 ##### (4) Format list of top eQTL for veQTL mapping #######
@@ -206,10 +221,62 @@ write.table(HS_trans_eqtl_sig_number,'HS_trans_eqtl_sig_number.txt',row.names = 
 
 # Top 50 eQTL to be regressed out during veQTL mapper
 # Old permutation method
-write.table(eQTL_correct_format(Ctrl_eqtl_sig_cis),'eQTL_for_Ctrl_cis_veqtl.txt',row.names = F,col.names = F, quote = F, sep = " ")
-write.table(eQTL_correct_format(HS_eqtl_sig_cis),'eQTL_for_HS_cis_veqtl.txt',row.names = F,col.names = F, quote = F, sep = " ")
-write.table(eQTL_correct_format(Ctrl_eqtl_sig_trans),'eQTL_for_Ctrl_trans_veqtl.txt',row.names = F,col.names = F, quote = F, sep = " ")
-write.table(eQTL_correct_format(HS_eqtl_sig_trans),'eQTL_for_HS_trans_veqtl.txt',row.names = F,col.names = F, quote = F, sep = " ")
+write.table(eQTL_correct_format(Ctrl_eqtl_sig_cis),'eQTL_for_Ctrl_cis_veqtl_correct.txt',row.names = F,col.names = F, quote = F, sep = " ")
+write.table(eQTL_correct_format(HS_eqtl_sig_cis),'eQTL_for_HS_cis_veqtl_correct.txt',row.names = F,col.names = F, quote = F, sep = " ")
+write.table(eQTL_correct_format(Ctrl_eqtl_sig_trans),'eQTL_for_Ctrl_trans_veqtl_correct.txt',row.names = F,col.names = F, quote = F, sep = " ")
+write.table(eQTL_correct_format(HS_eqtl_sig_trans),'eQTL_for_HS_trans_veqtl_correct.txt',row.names = F,col.names = F, quote = F, sep = " ")
 
 save.image(file='4_eQTL_prep_for_veQTL.RData')
 
+##################################################
+##### Note on a bug and the extent of damage #####
+################################################## 
+
+# Triple checking if the top_eQTL_list() function works as intended - pick a gene with >50, see if it is correct
+View(Ctrl_cis_eQTL_by_gene)
+View(Ctrl_cis_eQTL_by_gene["FBgn0000479"][["FBgn0000479"]])
+View(top_eQTL_list(Ctrl_cis_eQTL_by_gene["FBgn0000479"][["FBgn0000479"]],50))
+View(subset(Ctrl_top_cis_eQTL_list,phenotype_id=='FBgn0000479'))
+# It is wrong, it is printing the 50 HIGHEST pvals, Huiting was right...
+# Corrected in 23.3.26
+View(Ctrl_eQTL_by_gene)
+View(Ctrl_eQTL_by_gene["FBgn0030313"][["FBgn0030313"]]) # full list
+View(top_eQTL_list(Ctrl_eQTL_by_gene["FBgn0030313"][["FBgn0030313"]],50)) # function
+View(subset(Ctrl_top_eQTL_list,phenotype_id=='FBgn0030313')) # output list
+# It is wrong, it is printing the 50 HIGHEST pvals, Huiting was right...
+
+# How many genes are affected by this?
+# Number of SNPs per gene - just to get an idea of the distribution of high-eQTL genes
+# Trans-veQTL
+Ctrl_eQTL_by_gene_number <- do.call(rbind,lapply(Ctrl_eQTL_by_gene, nrow))
+View(Ctrl_eQTL_by_gene_number)  
+# 1443 genes above 50 eQTL - 16% of all genes with expression
+HS_eQTL_by_gene_number <- do.call(rbind,lapply(HS_eQTL_by_gene, nrow))
+View(HS_eQTL_by_gene_number)  
+# 908 genes above 50 eQTL - 10% of all genes with expression
+# Imperfect eQTL accounting should not affect most of the transcriptome
+
+# Rerun the cis-veQTL mapping with the same datafiles
+# Rerun the trans-veQTL mapping with only the above 10% - 15% of genes
+# Just for the trans results because this is time-consuming
+Ctrl_eQTL_by_gene_number_df <- as.data.frame(Ctrl_eQTL_by_gene_number)
+HS_eQTL_by_gene_number_df <- as.data.frame(HS_eQTL_by_gene_number)
+Ctrl_trans_veQTL_genes_remap <- rownames(subset(Ctrl_eQTL_by_gene_number_df,V1>50))
+HS_trans_veQTL_genes_remap <- rownames(subset(HS_eQTL_by_gene_number_df,V1>50))
+write.table(Ctrl_trans_veQTL_genes_remap,"Ctrl_trans_veQTL_genes_to_remap.txt",sep='\t',quote=F,row.names=F)
+write.table(HS_trans_veQTL_genes_remap,"HS_trans_veQTL_genes_to_remap.txt",sep='\t',quote=F,row.names=F)
+
+
+# Reduce the Phenotype dataframes to just those genes
+# Create hashless copies by removing the # in front of chr so that the column names 'IDs' can be read
+Ctrl_trans_veQTL_Phen <- read.table("Ctrl_phenos_trans_veQTL_mapping_hashless.bed",sep='\t',header = T,)
+Ctrl_trans_veQTL_Phen_remap <- Ctrl_trans_veQTL_Phen[Ctrl_trans_veQTL_Phen$phenotype_id %in% Ctrl_trans_veQTL_genes_remap, ]
+colnames(Ctrl_trans_veQTL_Phen_remap)[1] <-'#chr'
+colnames(Ctrl_trans_veQTL_Phen_remap) <- gsub('X','',colnames(Ctrl_trans_veQTL_Phen_remap))
+write.table(Ctrl_trans_veQTL_Phen_remap,"Ctrl_phenos_remap_trans_veQTL_mapping.bed",sep='\t',quote=F,row.names=F)
+
+HS_trans_veQTL_Phen <- read.table("HS_phenos_trans_veQTL_mapping_hashless.bed",sep='\t',header = T,)
+HS_trans_veQTL_Phen_remap <- HS_trans_veQTL_Phen[HS_trans_veQTL_Phen$phenotype_id %in% HS_trans_veQTL_genes_remap, ]
+colnames(HS_trans_veQTL_Phen_remap)[1] <-'#chr'
+colnames(HS_trans_veQTL_Phen_remap) <- gsub('X','',colnames(HS_trans_veQTL_Phen_remap))
+write.table(HS_trans_veQTL_Phen_remap,"HS_phenos_remap_trans_veQTL_mapping.bed",sep='\t',quote=F,row.names=F)
