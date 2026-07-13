@@ -8,7 +8,7 @@
 
 # BF's test section adapted from (https://rpubs.com/LiYumei/806213)
 
-# Last Updated: 15/9/25
+# Last Updated: 13/7/26
 
 #################################
 ##### Packages and Setup ########
@@ -201,9 +201,9 @@ setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs Hi
 write.csv(DV_testresults,'Both_DV_test_results.csv') # 7685
 
 
-##########################################################
-##### Variability change by mean plots ###################
-##########################################################
+################################################
+##### Variability change by mean plots #########
+################################################
 
 # Get DVG overlap
 gene_set1 <- rownames(GAMLSS_sig)
@@ -317,6 +317,132 @@ ggsave(plot = VoomVar_Mean_Ctrl_plot,filename = 'VoomVar_Mean_Ctrl_plot.svg',wid
 ggsave(plot = VoomVar_Mean_HS_plot,filename = 'VoomVar_Mean_HS_plot.svg',width=3.5,height=3.5,dpi=300)
 ggsave(plot = DelVoomVar_Mean_HS_plot,filename = 'DelVoomVar_Mean_HS_plot.svg',width=3.5,height=3.5,dpi=300)
 
+
+###########################################################################
+##### Full transcriptome per-diet BCV and variability visualisation #######
+###########################################################################
+
+# Boxplot visualisation of biological coefficient of variation
+
+# Step 1: Reshape to long format
+long_BCVs <- DV_testresults |>
+  dplyr::select(
+    Gene_id,
+    Ctrl = BCV.ctrl,
+    HS   = BCV.hs,
+  ) |>
+  tidyr::pivot_longer(
+    cols      = -Gene_id,
+    names_to  = "Group",
+    values_to = "BCV"
+  ) |>
+  dplyr::mutate(
+    Group = factor(Group,
+                   levels = c("Ctrl",
+                              "HS"))
+  )
+
+# Step 2: Per-group medians
+group_medians_BCV <- long_BCVs |>
+  dplyr::group_by(Group) |>
+  dplyr::summarise(
+    n      = dplyr::n(),
+    Median = median(BCV, na.rm = TRUE),
+    .groups = "drop"
+  )
+print(group_medians_BCV)
+
+# Step 3: Wilcoxon test
+pw_result_BCV <- wilcox.test(
+  x = long_BCVs$BCV,
+  g = long_BCVs$Group,
+  p.adjust.method = "BH"
+)
+print(pw_result_BCV)
+
+# Step 4: Box and whisker plot
+p_box_BCV <- ggplot(long_BCVs, aes(x = Group, y = BCV)) +
+  geom_boxplot(fill = "#66c2a5",
+    outlier.shape = 16,
+    outlier.size  = 0.8,
+    outlier.alpha = 0.3,
+    linewidth     = 0.5
+  ) +
+  scale_x_discrete(
+    labels = c(
+      "Ctrl_Outbred" = "Ctrl\nOutbred",
+      "HS_Outbred"   = "HS\nOutbred"
+    )
+  ) +
+  labs(x = "Diet",
+    y = "Estimated biological CV"
+  ) +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "none")
+print(p_box_BCV)
+
+# The MADs
+
+# Step 1: Reshape to long format
+long_MADs <- DV_testresults |>
+  dplyr::select(
+    Gene_id,
+    Ctrl = Ctrl.MAD.Voom,
+    HS   = HS.MAD.Voom,
+  ) |>
+  tidyr::pivot_longer(
+    cols      = -Gene_id,
+    names_to  = "Group",
+    values_to = "MAD"
+  ) |>
+  dplyr::mutate(
+    Group = factor(Group,
+                   levels = c("Ctrl",
+                              "HS"))
+  )
+
+# Step 2: Per-group medians
+group_medians_MAD <- long_MADs |>
+  dplyr::group_by(Group) |>
+  dplyr::summarise(
+    n      = dplyr::n(),
+    Median = median(MAD, na.rm = TRUE),
+    .groups = "drop"
+  )
+print(group_medians_MAD)
+
+# Step 3: Wilcoxon test
+pw_result_MAD <- wilcox.test(
+  x = long_MADs$MAD,
+  g = long_MADs$Group,
+  p.adjust.method = "BH"
+)
+print(pw_result_MAD)
+
+# Step 4: Box and whisker plot
+p_box_MAD <- ggplot(long_MADs, aes(x = Group, y = MAD)) +
+  geom_boxplot(fill = "#fc8d62",
+    outlier.shape = 16,
+    outlier.size  = 0.8,
+    outlier.alpha = 0.3,
+    linewidth     = 0.5
+  ) +
+  scale_x_discrete(
+    labels = c(
+      "Ctrl_Outbred" = "Ctrl\nOutbred",
+      "HS_Outbred"   = "HS\nOutbred"
+    )
+  ) +
+  labs(x = "Diet",
+       y = "Calculated MAD"
+  ) +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "none")
+print(p_box_MAD)
+
+setwd("C:\\Users\\jtanshengyi\\Desktop\\Projects\\veQTL Netherlands Normal vs High Sugar Adult\\Data\\DE_DV\\")
+ggsave(plot = p_box_BCV,filename = 'BCV_CtrlHS_plot.svg',width=2,height=4,dpi=300)
+ggsave(plot = p_box_MAD,filename = 'MAD_CtrlHS_plot.svg',width=2,height=4,dpi=300)
 
 
 # Save workspace
